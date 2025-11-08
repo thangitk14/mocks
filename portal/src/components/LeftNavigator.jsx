@@ -32,12 +32,19 @@ function LeftNavigator({ onToggle }) {
   )
 
   return (
-    <nav className="w-64 bg-gray-800 text-white min-h-screen p-4 relative">
+    <nav className="w-64 md:w-64 bg-gray-800 text-white min-h-screen p-4 relative shadow-lg">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Navigation</h2>
+        <h2 className="text-lg md:text-xl font-bold">Navigation</h2>
         <button
           onClick={onToggle}
-          className="text-gray-300 hover:text-white hover:bg-gray-700 px-2 py-1 rounded transition"
+          className="md:hidden text-gray-300 hover:text-white hover:bg-gray-700 px-2 py-1 rounded transition"
+          aria-label="Hide Navigation"
+        >
+          ×
+        </button>
+        <button
+          onClick={onToggle}
+          className="hidden md:block text-gray-300 hover:text-white hover:bg-gray-700 px-2 py-1 rounded transition"
           aria-label="Hide Navigation"
         >
           ◀
@@ -48,8 +55,9 @@ function LeftNavigator({ onToggle }) {
           <li key={item.path}>
             <NavLink
               to={item.path}
+              onClick={onToggle}
               className={({ isActive }) =>
-                `block px-4 py-2 rounded transition ${
+                `block px-4 py-2 rounded transition text-sm md:text-base ${
                   isActive
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-300 hover:bg-gray-700'

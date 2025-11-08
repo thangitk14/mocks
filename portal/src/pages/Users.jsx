@@ -107,23 +107,23 @@ function Users() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">User Management</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h2 className="text-xl md:text-2xl font-bold">User Management</h2>
         <button
           onClick={() => {
             setShowForm(true)
             setEditingUser(null)
             setFormData({ name: '', username: '', password: '', state: 'Active' })
           }}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+          className="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-sm md:text-base"
         >
           Add User
         </button>
       </div>
 
       {showForm && (
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <h3 className="text-xl font-bold mb-4">
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow mb-6">
+          <h3 className="text-lg md:text-xl font-bold mb-4">
             {editingUser ? 'Edit User' : 'Add New User'}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -182,10 +182,10 @@ function Users() {
                 <option value="Expired">Expired</option>
               </select>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <button
                 type="submit"
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+                className="w-full sm:w-auto px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition text-sm md:text-base"
               >
                 {editingUser ? 'Update' : 'Create'}
               </button>
@@ -195,7 +195,7 @@ function Users() {
                   setShowForm(false)
                   setEditingUser(null)
                 }}
-                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
+                className="w-full sm:w-auto px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition text-sm md:text-base"
               >
                 Cancel
               </button>
@@ -205,25 +205,26 @@ function Users() {
       )}
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px]">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 ID
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Tên
+              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Username
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 State
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">
                 Created Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Actions
               </th>
             </tr>
@@ -231,10 +232,10 @@ function Users() {
           <tbody className="divide-y divide-gray-200">
             {users.map((user) => (
               <tr key={user.id}>
-                <td className="px-6 py-4 whitespace-nowrap">{user.id}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{user.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{user.username}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-3 md:px-6 py-4 whitespace-nowrap">{user.id}</td>
+                <td className="px-3 md:px-6 py-4 whitespace-nowrap">{user.name}</td>
+                <td className="px-3 md:px-6 py-4 whitespace-nowrap">{user.username}</td>
+                <td className="px-3 md:px-6 py-4 whitespace-nowrap">
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${getStateBadgeColor(
                       user.state
@@ -243,29 +244,32 @@ function Users() {
                     {user.state}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-3 md:px-6 py-4 whitespace-nowrap hidden md:table-cell">
                   {user.created_at
-                    ? new Date(user.created_at).toLocaleDateString('vi-VN')
+                    ? new Date(user.created_at).toLocaleDateString('en-US')
                     : 'N/A'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <button
-                    onClick={() => handleEdit(user)}
-                    className="text-blue-600 hover:text-blue-800 mr-4"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(user.id)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    Delete
-                  </button>
+                <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEdit(user)}
+                        className="text-blue-600 hover:text-blue-800 text-sm md:text-base"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(user.id)}
+                        className="text-red-600 hover:text-red-800 text-sm md:text-base"
+                      >
+                        Delete
+                      </button>
+                    </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
         {users.length === 0 && (
           <div className="text-center py-8 text-gray-500">
             No users found

@@ -84,19 +84,19 @@ function RoleUser() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Role-User Management</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h2 className="text-xl md:text-2xl font-bold">Role-User Management</h2>
         <button
           onClick={() => setShowAssignForm(true)}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+          className="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-sm md:text-base"
         >
           Assign Role to User
         </button>
       </div>
 
       {showAssignForm && (
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <h3 className="text-xl font-bold mb-4">Assign Role to User</h3>
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow mb-6">
+          <h3 className="text-lg md:text-xl font-bold mb-4">Assign Role to User</h3>
           <form onSubmit={handleAssignRole} className="space-y-4">
             <div>
               <label className="block text-gray-700 mb-2">User ID</label>
@@ -128,10 +128,10 @@ function RoleUser() {
                 ))}
               </select>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <button
                 type="submit"
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+                className="w-full sm:w-auto px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition text-sm md:text-base"
               >
                 Assign Role
               </button>
@@ -141,7 +141,7 @@ function RoleUser() {
                   setShowAssignForm(false)
                   setAssignData({ userId: '', roleId: '' })
                 }}
-                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
+                className="w-full sm:w-auto px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition text-sm md:text-base"
               >
                 Cancel
               </button>
@@ -150,19 +150,19 @@ function RoleUser() {
         </div>
       )}
 
-      <div className="bg-white p-6 rounded-lg shadow mb-6">
-        <h3 className="text-lg font-bold mb-4">View User Roles</h3>
-        <div className="flex gap-4">
+      <div className="bg-white p-4 md:p-6 rounded-lg shadow mb-6">
+        <h3 className="text-base md:text-lg font-bold mb-4">View User Roles</h3>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
           <input
             type="number"
             placeholder="Enter User ID"
             value={selectedUserId}
             onChange={(e) => setSelectedUserId(e.target.value)}
-            className="px-4 py-2 border rounded flex-1"
+            className="px-4 py-2 border rounded flex-1 text-sm md:text-base"
           />
           <button
             onClick={() => selectedUserId && fetchUserRoles(selectedUserId)}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+            className="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-sm md:text-base"
           >
             Search
           </button>
@@ -175,22 +175,23 @@ function RoleUser() {
             <div className="text-center py-8">Loading...</div>
           ) : (
             <>
-              <table className="w-full">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px]">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Role ID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Code
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">
                       Path
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Actions
                     </th>
                   </tr>
@@ -198,22 +199,22 @@ function RoleUser() {
                 <tbody className="divide-y divide-gray-200">
                   {userRoles.map((role) => (
                     <tr key={role.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">{role.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap">{role.id}</td>
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap">
                         {role.code}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap">
                         {role.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap hidden md:table-cell">
                         {role.path}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() =>
                             handleRemoveRole(selectedUserId, role.id)
                           }
-                          className="text-red-600 hover:text-red-800"
+                          className="text-red-600 hover:text-red-800 text-sm md:text-base"
                         >
                           Delete
                         </button>
@@ -222,6 +223,7 @@ function RoleUser() {
                   ))}
                 </tbody>
               </table>
+              </div>
               {userRoles.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   This user has no roles

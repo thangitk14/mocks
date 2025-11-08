@@ -1,30 +1,55 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import Header from '../components/Header'
 import LeftNavigator from '../components/LeftNavigator'
 
 function MainPage() {
-  const [showNavigation, setShowNavigation] = useState(true)
+  const [showNavigation, setShowNavigation] = useState(false)
+
+  // Auto-hide navigation on mobile by default
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setShowNavigation(true)
+      } else {
+        setShowNavigation(false)
+      }
+    }
+
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Header />
+      <Header onToggleNav={() => setShowNavigation(!showNavigation)} />
       <div className="flex relative">
+        {/* Navigation overlay for mobile, sidebar for desktop */}
         {showNavigation && (
-          <div className="relative">
-            <LeftNavigator onToggle={() => setShowNavigation(false)} />
-          </div>
+          <>
+            {/* Backdrop for mobile */}
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+              onClick={() => setShowNavigation(false)}
+            />
+            {/* Navigation */}
+            <div className="fixed md:relative inset-y-0 left-0 z-50 md:z-auto">
+              <LeftNavigator onToggle={() => setShowNavigation(false)} />
+            </div>
+          </>
         )}
+        {/* Show navigation button when hidden - only on desktop */}
         {!showNavigation && (
           <button
             onClick={() => setShowNavigation(!showNavigation)}
-            className="fixed top-16 left-0 z-40 bg-gray-700 text-white px-3 py-2 rounded-r-md hover:bg-gray-600 transition-all duration-300 shadow-lg"
+            className="hidden md:block fixed top-16 left-0 z-40 bg-gray-700 text-white px-3 py-2 rounded-r-md hover:bg-gray-600 transition-all duration-300 shadow-lg"
             aria-label="Show Navigation"
           >
             ▶
           </button>
         )}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 md:p-6 w-full">
           <Outlet />
         </main>
       </div>
