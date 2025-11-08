@@ -54,6 +54,11 @@ This will create:
   - CONFIG_MANAGER: Configuration access (path: /config/*)
   - USER_MANAGER: User management access (path: /users/*)
   - VIEWER: View access (path: /view/*)
+- Default admin user:
+  - Username: `admin`
+  - Password: `Test@123`
+  - State: Active
+  - Full admin access
 
 ## Running the Service
 
@@ -134,6 +139,8 @@ GET /health
 - created_by: INT
 - updated_by: INT
 - role_user_id: INT
+- state: ENUM('Active', 'InActive', 'Expired') - User account state
+- expired_time: DATETIME (nullable) - Account expiration time
 - created_at: TIMESTAMP
 - updated_at: TIMESTAMP
 

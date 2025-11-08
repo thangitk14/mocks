@@ -81,6 +81,16 @@ const ERROR_CODES = {
     message: 'Failed to delete user',
     httpStatus: 500
   },
+  USER_INACTIVE: {
+    code: 4005,
+    message: 'User account is inactive',
+    httpStatus: 403
+  },
+  USER_EXPIRED: {
+    code: 4006,
+    message: 'User account has expired',
+    httpStatus: 403
+  },
 
   // Role Errors (5000-5999)
   ROLE_NOT_FOUND: {

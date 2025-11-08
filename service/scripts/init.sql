@@ -7,9 +7,12 @@ CREATE TABLE IF NOT EXISTS users (
   created_by INT DEFAULT 0,
   updated_by INT DEFAULT 0,
   role_user_id INT,
+  state ENUM('Active', 'InActive', 'Expired') DEFAULT 'Active',
+  expired_time DATETIME NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_username (username)
+  INDEX idx_username (username),
+  INDEX idx_state (state)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Create roles table
@@ -42,3 +45,22 @@ INSERT IGNORE INTO roles (code, name, path) VALUES
   ('CONFIG_MANAGER', 'Configuration Manager', '/config/*'),
   ('USER_MANAGER', 'User Manager', '/users/*'),
   ('VIEWER', 'Viewer', '/view/*');
+
+-- Insert default admin user
+-- Password: Test@123 (bcrypt hashed)
+-- Note: Password hash is generated with bcryptjs, 10 rounds
+INSERT IGNORE INTO users (id, name, username, password, created_by, updated_by, state, expired_time)
+VALUES (
+  1,
+  'System Administrator',
+  'admin',
+  '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', -- Test@123
+  0,
+  0,
+  'Active',
+  NULL
+);
+
+-- Assign ADMIN role to admin user
+INSERT IGNORE INTO role_user (user_id, role_id)
+SELECT 1, id FROM roles WHERE code = 'ADMIN' LIMIT 1;

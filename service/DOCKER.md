@@ -276,7 +276,15 @@ docker system prune -a --volumes
 Sau khi services chạy, test các API:
 
 ```bash
-# Register user
+# Login với default admin user
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "admin",
+    "password": "Test@123"
+  }'
+
+# Register user mới
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
@@ -285,7 +293,7 @@ curl -X POST http://localhost:3000/api/auth/register \
     "password": "password123"
   }'
 
-# Login
+# Login với user vừa tạo
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
@@ -293,6 +301,11 @@ curl -X POST http://localhost:3000/api/auth/login \
     "password": "password123"
   }'
 ```
+
+**Note:** Database đã tạo sẵn admin user:
+- Username: `admin`
+- Password: `Test@123`
+- Role: ADMIN (full access)
 
 ## Cấu trúc Files Docker
 

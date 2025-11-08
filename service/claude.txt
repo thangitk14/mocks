@@ -4,7 +4,7 @@ Tổng quan Service hệ thống.
  - Sử dụng express.
  - Có các api login, register, authen, authorization cơ bản.
  - Các model (Nếu có sai chính tả tự sửa): 
-  + User: Dùng cho việc quản lý User cơ bản các field (id, tên, username, password, created_by, updated_by, role_user_id).
+  + User: Dùng cho việc quản lý User cơ bản các field (id, tên, username, password, created_by, updated_by, role_user_id, state).
   + Role: Quản lý các quyền (id, code, name, path). path này dùng cho việc phân quyền ở api theo chức năng. VD: các chức năng quản lý config sẽ thông qua path /config/*. Các user có permission này mới được thực hiện các api /config/change,new, ... 
   + RoleUser: (id, user_id, role_id), xử lý quan hệ n-n của role và user
 

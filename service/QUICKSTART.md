@@ -46,7 +46,38 @@ Kết quả:
 }
 ```
 
-## Bước 4: Test Register & Login
+## Bước 4: Test Login với Admin
+
+Database đã tạo sẵn một admin user:
+- Username: `admin`
+- Password: `Test@123`
+
+### Login với admin:
+
+```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "admin",
+    "password": "Test@123"
+  }'
+```
+
+Kết quả:
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": 1,
+      "name": "System Administrator",
+      "username": "admin",
+      "role_user_id": null
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
 
 ### Register user mới:
 

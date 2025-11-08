@@ -1,19 +1,20 @@
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
+const USER_STATES = require('../constants/userStates');
 
 class User {
-  static async create({ name, username, password, created_by, role_user_id }) {
+  static async create({ name, username, password, created_by, role_user_id, state, expired_time }) {
     const hashedPassword = await bcrypt.hash(password, 10);
     const [result] = await db.execute(
-      'INSERT INTO users (name, username, password, created_by, updated_by, role_user_id) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, username, hashedPassword, created_by, created_by, role_user_id]
+      'INSERT INTO users (name, username, password, created_by, updated_by, role_user_id, state, expired_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, username, hashedPassword, created_by, created_by, role_user_id, state || USER_STATES.ACTIVE, expired_time || null]
     );
     return result.insertId;
   }
 
   static async findById(id) {
     const [rows] = await db.execute(
-      'SELECT id, name, username, created_by, updated_by, role_user_id, created_at, updated_at FROM users WHERE id = ?',
+      'SELECT id, name, username, created_by, updated_by, role_user_id, state, expired_time, created_at, updated_at FROM users WHERE id = ?',
       [id]
     );
     return rows[0];
@@ -27,7 +28,7 @@ class User {
     return rows[0];
   }
 
-  static async update(id, { name, username, password, updated_by, role_user_id }) {
+  static async update(id, { name, username, password, updated_by, role_user_id, state, expired_time }) {
     const updates = [];
     const values = [];
 
@@ -47,6 +48,14 @@ class User {
     if (role_user_id !== undefined) {
       updates.push('role_user_id = ?');
       values.push(role_user_id);
+    }
+    if (state !== undefined) {
+      updates.push('state = ?');
+      values.push(state);
+    }
+    if (expired_time !== undefined) {
+      updates.push('expired_time = ?');
+      values.push(expired_time);
     }
     if (updated_by !== undefined) {
       updates.push('updated_by = ?');
@@ -80,6 +89,39 @@ class User {
       [userId]
     );
     return rows;
+  }
+
+  static isUserActive(user) {
+    if (!user) return false;
+    return user.state === USER_STATES.ACTIVE;
+  }
+
+  static isUserExpired(user) {
+    if (!user) return true;
+
+    // Check if state is Expired
+    if (user.state === USER_STATES.EXPIRED) return true;
+
+    // Check if expired_time has passed
+    if (user.expired_time) {
+      const now = new Date();
+      const expiredTime = new Date(user.expired_time);
+      return now > expiredTime;
+    }
+
+    return false;
+  }
+
+  static canUserLogin(user) {
+    if (!user) return false;
+
+    // User must be active
+    if (!this.isUserActive(user)) return false;
+
+    // User must not be expired
+    if (this.isUserExpired(user)) return false;
+
+    return true;
   }
 }
 

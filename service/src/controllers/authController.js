@@ -61,6 +61,16 @@ const login = async (req, res, next) => {
       throw new AppError(ERROR_CODES.INVALID_CREDENTIALS);
     }
 
+    // Check if user is expired
+    if (User.isUserExpired(user)) {
+      throw new AppError(ERROR_CODES.USER_EXPIRED);
+    }
+
+    // Check if user is active
+    if (!User.isUserActive(user)) {
+      throw new AppError(ERROR_CODES.USER_INACTIVE);
+    }
+
     // Generate JWT token
     const token = generateToken({ userId: user.id, username: user.username });
 
