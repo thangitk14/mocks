@@ -12,8 +12,8 @@ RUN npm install
 # Copy application files
 COPY . .
 
-# Build argument for API URL
-ARG VITE_API_BASE_URL=http://localhost:3000
+# Build argument for API URL (optional - if not set, will use relative paths)
+ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 # Build the application

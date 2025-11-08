@@ -68,13 +68,28 @@ docker-compose up -d mock_service
 - `SERVICE_URL`: http://mock_service:3000
 
 ### Portal (.env.production)
-- `VITE_API_BASE_URL`: http://localhost:3000
+- `VITE_API_BASE_URL`: (Optional) Nếu không set, portal sẽ tự động sử dụng relative paths và nginx sẽ proxy đến backend
 
 ## Production Mode
 
 Tất cả services đã được cấu hình để:
 - Listen trên `0.0.0.0` trong production mode (cho phép truy cập từ localhost và external interfaces)
 - Sử dụng environment variables từ `.env.production` files
+
+## Nginx Proxy Configuration
+
+Portal sử dụng nginx để proxy API requests:
+- Tất cả requests đến `/api/*` sẽ được proxy đến `mock_service:3000`
+- Tất cả requests đến `/socket.io/*` sẽ được proxy đến `mock_service:3000` (cho WebSocket)
+- Điều này cho phép portal hoạt động với bất kỳ domain nào mà không cần cấu hình CORS
+
+### Deploy với Domain Production
+
+Khi deploy lên domain (ví dụ: `fw.thangvnnc.io.vn`):
+1. Portal sẽ tự động detect domain hiện tại
+2. API requests sẽ sử dụng relative paths (ví dụ: `/api/auth/login`)
+3. Nginx sẽ tự động proxy các requests này đến backend service
+4. Không cần cấu hình `VITE_API_BASE_URL` - hệ thống sẽ tự động hoạt động
 
 ## Ports
 

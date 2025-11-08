@@ -1,7 +1,29 @@
 import axios from 'axios'
 
+// Auto-detect API URL: use env variable, or detect from current domain, or fallback to localhost
+const getApiBaseURL = () => {
+  // If VITE_API_BASE_URL is explicitly set, use it
+  if (import.meta.env.VITE_API_BASE_URL) {
+    console.log('[API] Using VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
+    return import.meta.env.VITE_API_BASE_URL
+  }
+  
+  // In production, use relative path (will be proxied by nginx)
+  if (import.meta.env.MODE === 'production') {
+    console.log('[API] Production mode - using relative path (empty string)')
+    return ''
+  }
+  
+  // Development fallback
+  console.log('[API] Development mode - using localhost:3000')
+  return 'http://localhost:3000'
+}
+
+const apiBaseURL = getApiBaseURL()
+console.log('[API] Initialized with baseURL:', apiBaseURL, 'Mode:', import.meta.env.MODE)
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
+  baseURL: apiBaseURL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -14,20 +36,51 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    // Log request for debugging
+    if (import.meta.env.MODE === 'development' || import.meta.env.DEV) {
+      console.log('[API Request]', config.method?.toUpperCase(), config.url, {
+        baseURL: config.baseURL,
+        data: config.data
+      })
+    }
     return config
   },
   (error) => {
+    console.error('[API Request Error]', error)
     return Promise.reject(error)
   }
 )
 
 // Response interceptor to handle errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Log response for debugging
+    if (import.meta.env.MODE === 'development' || import.meta.env.DEV) {
+      console.log('[API Response]', response.config.method?.toUpperCase(), response.config.url, {
+        status: response.status,
+        data: response.data
+      })
+    }
+    return response
+  },
   (error) => {
+    // Log error for debugging
+    console.error('[API Error]', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      baseURL: error.config?.baseURL
+    })
+    
     if (error.response?.status === 401) {
       localStorage.removeItem('token')
-      window.location.href = '/login'
+      // Only redirect if not already on login page
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }

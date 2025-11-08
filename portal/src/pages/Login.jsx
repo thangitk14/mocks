@@ -15,15 +15,25 @@ function Login() {
     e.preventDefault()
     setLoading(true)
 
-    const result = await login(username, password)
+    console.log('[Login] Attempting login for user:', username)
+    
+    try {
+      const result = await login(username, password)
+      console.log('[Login] Login result:', result)
 
-    if (result.success) {
-      navigate('/')
-    } else {
-      showError(result.error || 'Login failed')
+      if (result.success) {
+        console.log('[Login] Login successful, navigating to dashboard')
+        navigate('/')
+      } else {
+        console.error('[Login] Login failed:', result.error)
+        showError(result.error || 'Login failed')
+      }
+    } catch (error) {
+      console.error('[Login] Unexpected error:', error)
+      showError(error.message || 'An unexpected error occurred')
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   return (

@@ -57,6 +57,25 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     try {
       const response = await api.post('/api/auth/login', { username, password })
+      
+      // Check if response is successful
+      if (!response.data || !response.data.success) {
+        console.error('Login failed - invalid response:', response.data)
+        return {
+          success: false,
+          error: response.data?.error?.message || response.data?.message || 'Invalid response from server'
+        }
+      }
+
+      // Check if token exists in response
+      if (!response.data.data || !response.data.data.token) {
+        console.error('Login failed - no token in response:', response.data)
+        return {
+          success: false,
+          error: 'No token received from server'
+        }
+      }
+
       const { token: newToken } = response.data.data
       setToken(newToken)
       localStorage.setItem('token', newToken)
@@ -64,9 +83,24 @@ export function AuthProvider({ children }) {
       await fetchProfile()
       return { success: true }
     } catch (error) {
+      console.error('Login error:', error)
+      console.error('Error response:', error.response)
+      
+      // Handle network errors
+      if (!error.response) {
+        return {
+          success: false,
+          error: `Network error: ${error.message || 'Cannot connect to server'}`
+        }
+      }
+
+      // Handle API errors
+      const errorData = error.response.data
+      const errorMessage = errorData?.error?.message || errorData?.message || error.message || 'Login failed'
+      
       return {
         success: false,
-        error: error.response?.data?.error?.message || error.response?.data?.message || 'Login failed'
+        error: errorMessage
       }
     }
   }
