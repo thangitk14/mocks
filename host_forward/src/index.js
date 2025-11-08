@@ -60,9 +60,14 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Host Forward service is running on port ${PORT}`);
+// Listen on 0.0.0.0 in production to accept connections from both localhost and external interfaces
+const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+app.listen(PORT, HOST, () => {
+  console.log(`Host Forward service is running on ${HOST}:${PORT}`);
   console.log(`Service URL: ${SERVICE_URL}`);
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`Listening on 0.0.0.0 (accessible from localhost and external interfaces)`);
+  }
 });
 
 module.exports = app;

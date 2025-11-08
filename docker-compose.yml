@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mock_mysql:
+    image: mysql:8.0
+    container_name: mock_service_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-Test@123}
+      MYSQL_DATABASE: ${DB_NAME:-service_dev}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mock_mysql_data:/var/lib/mysql
+      - ./service/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD:-Test@123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mock_service_network
+
+  # Node.js Service (Backend API)
+  mock_service:
+    build:
+      context: ./service
+      dockerfile: Dockerfile
+    container_name: mock_service_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DB_HOST: mock_mysql
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-Test@123}
+      DB_NAME: ${DB_NAME:-service_dev}
+      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key_for_production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      PORT: 3000
+    depends_on:
+      mock_mysql:
+        condition: service_healthy
+    volumes:
+      - ./service/src:/app/src
+      - ./service/scripts:/app/scripts
+      - ./service/package.json:/app/package.json
+      - /app/node_modules
+    networks:
+      - mock_service_network
+    command: npm start
+
+  # Host Forward Service
+  host_forward:
+    build:
+      context: ./host_forward
+      dockerfile: Dockerfile
+    container_name: mock_host_forward
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      SERVICE_URL: http://mock_service:3000
+    depends_on:
+      - mock_service
+    volumes:
+      - ./host_forward/src:/app/src
+      - ./host_forward/package.json:/app/package.json
+      - /app/node_modules
+    networks:
+      - mock_service_network
+    command: npm start
+
+  # Portal (React Frontend)
+  portal:
+    build:
+      context: ./portal
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
+    container_name: mock_portal
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - mock_service
+    networks:
+      - mock_service_network
+
+volumes:
+  mock_mysql_data:
+    driver: local
+
+networks:
+  mock_service_network:
+    driver: bridge
+

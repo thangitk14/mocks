@@ -102,10 +102,15 @@ io.on('connection', (socket) => {
 
 // Start server
 const PORT = config.port;
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+// Listen on 0.0.0.0 in production to accept connections from both localhost and external interfaces
+const HOST = config.nodeEnv === 'production' ? '0.0.0.0' : 'localhost';
+server.listen(PORT, HOST, () => {
+  console.log(`Server is running on ${HOST}:${PORT}`);
   console.log(`Environment: ${config.nodeEnv}`);
   console.log(`Socket.IO server initialized`);
+  if (config.nodeEnv === 'production') {
+    console.log(`Listening on 0.0.0.0 (accessible from localhost and external interfaces)`);
+  }
 });
 
 module.exports = { app, server, io };
