@@ -69,13 +69,13 @@ function Roles() {
   }
 
   if (loading) {
-    return <div className="text-center py-8">Loading...</div>
+    return <div className="text-center py-8 text-gray-800 dark:text-white">Loading...</div>
   }
 
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h2 className="text-xl md:text-2xl font-bold">Role Management</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">Role Management</h2>
         <button
           onClick={() => {
             setShowForm(true)
@@ -89,45 +89,45 @@ function Roles() {
       </div>
 
       {showForm && (
-        <div className="bg-white p-4 md:p-6 rounded-lg shadow mb-6">
-          <h3 className="text-lg md:text-xl font-bold mb-4">
+        <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow mb-6">
+          <h3 className="text-lg md:text-xl font-bold mb-4 text-gray-800 dark:text-white">
             {editingRole ? 'Edit Role' : 'Add New Role'}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-gray-700 mb-2">Code</label>
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">Code</label>
               <input
                 type="text"
                 value={formData.code}
                 onChange={(e) =>
                   setFormData({ ...formData, code: e.target.value })
                 }
-                className="w-full px-4 py-2 border rounded"
+                className="w-full px-4 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 required
                 disabled={!!editingRole}
               />
             </div>
             <div>
-              <label className="block text-gray-700 mb-2">Name</label>
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">Name</label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                className="w-full px-4 py-2 border rounded"
+                className="w-full px-4 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 required
               />
             </div>
             <div>
-              <label className="block text-gray-700 mb-2">Path</label>
+              <label className="block text-gray-700 dark:text-gray-300 mb-2">Path</label>
               <input
                 type="text"
                 value={formData.path}
                 onChange={(e) =>
                   setFormData({ ...formData, path: e.target.value })
                 }
-                className="w-full px-4 py-2 border rounded"
+                className="w-full px-4 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 required
               />
             </div>
@@ -153,46 +153,46 @@ function Roles() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px]">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                 ID
               </th>
-              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                 Code
               </th>
-              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                 Name
               </th>
-              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">
+              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase hidden md:table-cell">
                 Path
               </th>
-              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
             {roles.map((role) => (
-              <tr key={role.id}>
-                <td className="px-3 md:px-6 py-4 whitespace-nowrap">{role.id}</td>
-                <td className="px-3 md:px-6 py-4 whitespace-nowrap">{role.code}</td>
-                <td className="px-3 md:px-6 py-4 whitespace-nowrap">{role.name}</td>
-                <td className="px-3 md:px-6 py-4 whitespace-nowrap hidden md:table-cell">{role.path}</td>
+              <tr key={role.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <td className="px-3 md:px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{role.id}</td>
+                <td className="px-3 md:px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{role.code}</td>
+                <td className="px-3 md:px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{role.name}</td>
+                <td className="px-3 md:px-6 py-4 whitespace-nowrap hidden md:table-cell text-gray-900 dark:text-white">{role.path}</td>
                 <td className="px-3 md:px-6 py-4 whitespace-nowrap">
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEdit(role)}
-                      className="text-blue-600 hover:text-blue-800 text-sm md:text-base"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm md:text-base"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(role.id)}
-                      className="text-red-600 hover:text-red-800 text-sm md:text-base"
+                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm md:text-base"
                     >
                       Delete
                     </button>
@@ -204,7 +204,7 @@ function Roles() {
         </table>
         </div>
         {roles.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             No roles found
           </div>
         )}

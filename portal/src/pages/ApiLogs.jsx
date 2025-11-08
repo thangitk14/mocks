@@ -267,46 +267,54 @@ function ApiLogs() {
         >
           ← Back
         </button>
-        <h2 className="text-xl md:text-2xl font-bold">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">
           API Logs - {domain?.forward_domain || 'Loading...'}
         </h2>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px]">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
-                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Forward Path</th>
-                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Created At</th>
-                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ID</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Method</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Forward Path</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase hidden md:table-cell">Created At</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
               {logs.map((log) => (
-                <tr key={log.id} className="hover:bg-gray-50">
-                  <td className="px-3 md:px-6 py-4 whitespace-nowrap">{log.id}</td>
+                <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{log.id}</td>
                   <td className="px-3 md:px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs font-medium">
                       {log.method}
                     </span>
                   </td>
                   <td className="px-3 md:px-6 py-4">
-                    <div className="max-w-md truncate text-xs md:text-sm text-gray-700" title={getForwardPath(log.toCUrl)}>
+                    <div className="max-w-md truncate text-xs md:text-sm text-gray-700 dark:text-gray-300" title={getForwardPath(log.toCUrl)}>
                       {getForwardPath(log.toCUrl)}
                     </div>
                   </td>
                   <td className="px-3 md:px-6 py-4 whitespace-nowrap">
                     {log.status && (
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(log.status)}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        log.status >= 200 && log.status < 300 
+                          ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                          : log.status >= 300 && log.status < 400
+                          ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
+                          : log.status >= 400
+                          ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                          : 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200'
+                      }`}>
                         {log.status}
                       </span>
                     )}
                   </td>
-                  <td className="px-3 md:px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                  <td className="px-3 md:px-6 py-4 whitespace-nowrap hidden md:table-cell text-gray-900 dark:text-white">
                     {log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A'}
                   </td>
                   <td className="px-3 md:px-6 py-4 whitespace-nowrap">
@@ -314,7 +322,7 @@ function ApiLogs() {
                       {log.toCUrl && (
                         <button
                           onClick={() => setSelectedCurl(log.toCUrl)}
-                          className="text-blue-600 hover:text-blue-800 text-sm md:text-base"
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm md:text-base"
                         >
                           View cURL
                         </button>
@@ -325,7 +333,7 @@ function ApiLogs() {
                           setShowResponseHeaders(false) // Reset collapse state when opening new log
                           setShowResponseBody(true) // Default open for body
                         }}
-                        className="text-green-600 hover:text-green-800 text-sm md:text-base"
+                        className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 text-sm md:text-base"
                       >
                         Show
                       </button>
@@ -337,17 +345,17 @@ function ApiLogs() {
           </table>
         </div>
         {logs.length === 0 && (
-          <div className="text-center py-8 text-gray-500">No API logs found</div>
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">No API logs found</div>
         )}
       </div>
 
       {/* cURL Dialog */}
       {selectedCurl && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="p-6 border-b">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b dark:border-gray-700">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold">cURL Command</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white">cURL Command</h3>
                 <button
                   onClick={() => setSelectedCurl(null)}
                   className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -382,11 +390,11 @@ function ApiLogs() {
       {/* Response Dialog */}
       {selectedLog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="p-6 border-b">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b dark:border-gray-700">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <h3 className="text-xl font-bold">Response Details</h3>
+                  <h3 className="text-xl font-bold text-gray-800 dark:text-white">Response Details</h3>
                   {selectedLog.status && (
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedLog.status)}`}>
                       {selectedLog.status}

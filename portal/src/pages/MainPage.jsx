@@ -22,9 +22,9 @@ function MainPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="h-screen bg-gray-100 dark:bg-gray-900 flex flex-col overflow-hidden">
       <Header onToggleNav={() => setShowNavigation(!showNavigation)} />
-      <div className="flex relative">
+      <div className="flex relative flex-1 overflow-hidden">
         {/* Navigation overlay for mobile, sidebar for desktop */}
         {showNavigation && (
           <>
@@ -34,7 +34,7 @@ function MainPage() {
               onClick={() => setShowNavigation(false)}
             />
             {/* Navigation */}
-            <div className="fixed md:relative inset-y-0 left-0 z-50 md:z-auto">
+            <div className="fixed md:relative inset-y-0 left-0 z-50 md:z-auto h-full overflow-hidden">
               <LeftNavigator onToggle={() => setShowNavigation(false)} />
             </div>
           </>
@@ -49,7 +49,7 @@ function MainPage() {
             ▶
           </button>
         )}
-        <main className="flex-1 p-4 md:p-6 w-full">
+        <main className="flex-1 p-4 md:p-6 w-full overflow-y-auto">
           <Outlet />
         </main>
       </div>
