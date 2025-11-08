@@ -26,9 +26,23 @@ const forwardRequest = async (req, res, next) => {
 
     // Build forward URL - replace the path prefix with forward_domain
     let forwardPath = path;
+    
+    // Handle exact path match
     if (path.startsWith(domain.path)) {
       // Remove the mapped path prefix and append to forward_domain
       forwardPath = path.substring(domain.path.length) || '/';
+    }
+    // Handle wildcard mapping (e.g., /vietbank/sample/*)
+    else if (domain.path.endsWith('/*')) {
+      const basePath = domain.path.slice(0, -1); // Remove trailing *
+      if (path.startsWith(basePath)) {
+        // Remove the base path prefix
+        forwardPath = path.substring(basePath.length) || '/';
+      } else if (path === basePath.slice(0, -1)) {
+        // Handle case where path is exactly basePath without trailing slash
+        // e.g., path = /vietbank/sample, basePath = /vietbank/sample/
+        forwardPath = '/';
+      }
     }
     
     // Ensure forward_domain doesn't end with / and forwardPath starts with /
@@ -69,6 +83,11 @@ const forwardRequest = async (req, res, next) => {
       responseData: response.data
     };
 
+    // Call logRequest directly (fire and forget - don't await)
+    logRequest(req, res, () => {}).catch(err => {
+      console.error('Error calling logRequest:', err.message);
+    });
+
     // Return response to client with same headers
     res.status(response.status);
     
@@ -98,8 +117,10 @@ const forwardRequest = async (req, res, next) => {
       responseStatus: 500
     };
 
-    // Still log the request even if forward failed
-    next();
+    // Call logRequest directly (fire and forget - don't await)
+    logRequest(req, res, () => {}).catch(err => {
+      console.error('Error calling logRequest:', err.message);
+    });
     
     // Return error response
     res.status(500).json({
@@ -118,19 +139,29 @@ const logRequest = async (req, res, next) => {
   }
 
   try {
-    const path = req.path;
-    const domain = getMappingDomainByPath(path);
+    // Use domain from forwardInfo if available (set by forwardRequest)
+    const domain = req.forwardInfo?.domain;
 
     if (!domain) {
-      return next();
+      // If no domain in forwardInfo, try to find it
+      const path = req.path;
+      const foundDomain = getMappingDomainByPath(path);
+      if (!foundDomain) {
+        return next();
+      }
+      // Use found domain
+      req.forwardInfo = req.forwardInfo || {};
+      req.forwardInfo.domain = foundDomain;
     }
 
+    const domainToUse = req.forwardInfo.domain;
+
     // Generate cURL command
-    const curlCommand = generateCurl(req, domain);
+    const curlCommand = generateCurl(req, domainToUse);
 
     // Prepare log data
     const logData = {
-      domain_id: domain.id,
+      domain_id: domainToUse.id,
       headers: req.headers,
       body: req.body || {},
       query: req.query || {},
@@ -141,18 +172,28 @@ const logRequest = async (req, res, next) => {
 
     // Send log to service (fire and forget)
     const serviceUrl = process.env.SERVICE_URL || 'http://localhost:3000';
+    console.log(`[LOG] Sending log to ${serviceUrl}/api/logs for domain_id: ${domainToUse.id}, method: ${req.method}, path: ${req.path}`);
     axios.post(`${serviceUrl}/api/logs`, logData, {
       headers: {
         'Content-Type': 'application/json'
       },
       timeout: 5000
+    }).then((response) => {
+      console.log(`[LOG] Successfully logged request for domain_id: ${domainToUse.id}, status: ${response.status}`);
     }).catch(err => {
-      console.error('Failed to log request:', err.message);
+      console.error(`[LOG] Failed to log request for domain_id: ${domainToUse.id}:`, err.message);
+      if (err.response) {
+        console.error('Response status:', err.response.status);
+        console.error('Response data:', JSON.stringify(err.response.data));
+      } else if (err.request) {
+        console.error('No response received. Request config:', err.config?.url);
+      }
     });
 
     next();
   } catch (error) {
     console.error('Log request error:', error.message);
+    console.error('Stack:', error.stack);
     next();
   }
 };

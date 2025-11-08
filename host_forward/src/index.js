@@ -41,12 +41,13 @@ app.get('/health', (req, res) => {
 });
 
 // Forward all requests (except health check)
+// logRequest is now called directly inside forwardRequest
 app.all('*', (req, res, next) => {
   if (req.path === '/health') {
     return next();
   }
   forwardRequest(req, res, next);
-}, logRequest);
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {

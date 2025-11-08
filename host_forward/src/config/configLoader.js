@@ -41,7 +41,20 @@ const getMappingDomainByPath = (path) => {
     domain = mappingDomains.find(d => {
       if (d.state !== 'Active') return false;
       if (d.forward_state === 'NoneApi') return false;
-      return path.startsWith(d.path);
+      
+      // Handle exact path match
+      if (path.startsWith(d.path)) {
+        return true;
+      }
+      
+      // Handle wildcard mapping (e.g., /vietbank/sample/*)
+      if (d.path.endsWith('/*')) {
+        const basePath = d.path.slice(0, -1); // Remove trailing *
+        // Check if path starts with basePath (with or without trailing slash)
+        return path.startsWith(basePath) || path === basePath.slice(0, -1);
+      }
+      
+      return false;
     });
   }
 

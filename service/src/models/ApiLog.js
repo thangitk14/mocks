@@ -31,9 +31,20 @@ class ApiLog {
   }
 
   static async findByDomainId(domainId, limit = 100, offset = 0) {
-    const [rows] = await db.execute(
-      'SELECT * FROM api_logs WHERE domain_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-      [domainId, limit, offset]
+    // Convert to integers and validate to avoid MySQL prepared statement issues
+    const domainIdInt = parseInt(domainId);
+    const limitInt = Math.max(1, Math.min(1000, parseInt(limit) || 100)); // Clamp between 1 and 1000
+    const offsetInt = Math.max(0, parseInt(offset) || 0); // Ensure non-negative
+    
+    if (isNaN(domainIdInt)) {
+      throw new Error('Invalid domainId');
+    }
+    
+    // Use query instead of execute to avoid LIMIT/OFFSET placeholder issues
+    // Values are validated integers, safe for template string
+    const [rows] = await db.query(
+      `SELECT * FROM api_logs WHERE domain_id = ? ORDER BY created_at DESC LIMIT ${limitInt} OFFSET ${offsetInt}`,
+      [domainIdInt]
     );
     return rows.map(row => ({
       ...row,
@@ -44,9 +55,14 @@ class ApiLog {
   }
 
   static async findAll(limit = 100, offset = 0) {
-    const [rows] = await db.execute(
-      'SELECT * FROM api_logs ORDER BY created_at DESC LIMIT ? OFFSET ?',
-      [limit, offset]
+    // Convert to integers and validate to avoid MySQL prepared statement issues
+    const limitInt = Math.max(1, Math.min(1000, parseInt(limit) || 100)); // Clamp between 1 and 1000
+    const offsetInt = Math.max(0, parseInt(offset) || 0); // Ensure non-negative
+    
+    // Use query instead of execute to avoid LIMIT/OFFSET placeholder issues
+    // Values are validated integers, safe for template string
+    const [rows] = await db.query(
+      `SELECT * FROM api_logs ORDER BY created_at DESC LIMIT ${limitInt} OFFSET ${offsetInt}`
     );
     return rows.map(row => ({
       ...row,
@@ -57,9 +73,12 @@ class ApiLog {
   }
 
   static async countByDomainId(domainId) {
+    // Convert to integer to avoid MySQL prepared statement issues
+    const domainIdInt = parseInt(domainId);
+    
     const [rows] = await db.execute(
       'SELECT COUNT(*) as count FROM api_logs WHERE domain_id = ?',
-      [domainId]
+      [domainIdInt]
     );
     return rows[0].count;
   }

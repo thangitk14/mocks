@@ -73,6 +73,7 @@ const getApiLogsByDomain = async (req, res, next) => {
 };
 
 const createApiLog = async (req, res, next) => {
+  console.log('createApiLog');
   try {
     const { domain_id, headers, body, query, method, status, toCUrl } = req.body;
 

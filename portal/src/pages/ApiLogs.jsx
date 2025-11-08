@@ -59,6 +59,142 @@ function ApiLogs() {
     return 'bg-gray-100 text-gray-800'
   }
 
+  // Extract forward path from cURL command (path only, not full URL)
+  // Example: from "https://mock-3.thangvnnc.io.vn/vietbank/api/transaction-service/reward-360/GetMemberProfileAsync"
+  // with mapping "/vietbank/*" => returns "api/transaction-service/reward-360/GetMemberProfileAsync"
+  const getForwardPath = (curlCommand) => {
+    if (!curlCommand) {
+      console.log('[getForwardPath] No curlCommand provided')
+      return 'N/A'
+    }
+    if (!domain) {
+      console.log('[getForwardPath] No domain provided')
+      return 'N/A'
+    }
+    
+    // Extract URL from cURL command - match quoted strings that contain http
+    // Handle both single-line and multi-line cURL commands
+    let fullUrl = null
+    
+    // Try to find URL in quoted strings
+    const urlMatches = curlCommand.match(/"([^"]+)"/g)
+    if (urlMatches && urlMatches.length > 0) {
+      // Find the last match that starts with http:// or https://
+      for (let i = urlMatches.length - 1; i >= 0; i--) {
+        const match = urlMatches[i].replace(/"/g, '')
+        if (match.startsWith('http://') || match.startsWith('https://')) {
+          fullUrl = match
+          break
+        }
+      }
+    }
+    
+    // If not found in quoted strings, try to find URL directly
+    if (!fullUrl) {
+      const directUrlMatch = curlCommand.match(/(https?:\/\/[^\s"']+)/)
+      if (directUrlMatch) {
+        fullUrl = directUrlMatch[1]
+      }
+    }
+    
+    if (!fullUrl) {
+      console.log('[getForwardPath] No URL found in curlCommand:', curlCommand.substring(0, 200))
+      return 'N/A'
+    }
+    
+    console.log('[getForwardPath] Found URL:', fullUrl)
+    console.log('[getForwardPath] Domain:', domain)
+    console.log('[getForwardPath] Forward domain:', domain.forward_domain)
+    console.log('[getForwardPath] Mapping path:', domain.path)
+    
+    try {
+      // Remove forward domain to get the path
+      const forwardDomain = domain.forward_domain.replace(/\/$/, '')
+      
+      if (fullUrl.startsWith(forwardDomain)) {
+        // Extract path from URL (remove forward domain)
+        let pathWithQuery = fullUrl.substring(forwardDomain.length)
+        
+        // Remove query string if exists
+        const queryIndex = pathWithQuery.indexOf('?')
+        let path = queryIndex >= 0 ? pathWithQuery.substring(0, queryIndex) : pathWithQuery
+        
+        console.log('[getForwardPath] Path after removing domain:', path)
+        
+        // Remove mapping path prefix from domain.path
+        let mappingPath = domain.path
+        if (mappingPath.endsWith('/*')) {
+          // For wildcard mapping, remove the base path (e.g., /vietbank from /vietbank/*)
+          mappingPath = mappingPath.slice(0, -1) // Remove * to get /vietbank
+        }
+        
+        console.log('[getForwardPath] Mapping path (processed):', mappingPath)
+        
+        // Remove mapping prefix from path
+        // Handle both /vietbank and /vietbank/ cases
+        if (path.startsWith(mappingPath)) {
+          path = path.substring(mappingPath.length)
+        } else if (mappingPath.endsWith('/') && path.startsWith(mappingPath.slice(0, -1))) {
+          // Handle case where mappingPath ends with / but path doesn't
+          path = path.substring(mappingPath.length - 1)
+        }
+        
+        // Remove leading slash to get relative path (e.g., /api/... => api/...)
+        path = path.replace(/^\//, '')
+        
+        console.log('[getForwardPath] Final path:', path)
+        return path || '/'
+      }
+      
+      // If domain doesn't match, try to extract path from URL object
+      console.log('[getForwardPath] Domain mismatch, trying URL object')
+      const url = new URL(fullUrl)
+      let path = url.pathname
+      
+      // Remove mapping path prefix
+      let mappingPath = domain.path
+      if (mappingPath.endsWith('/*')) {
+        mappingPath = mappingPath.slice(0, -1)
+      }
+      if (path.startsWith(mappingPath)) {
+        path = path.substring(mappingPath.length)
+      }
+      path = path.replace(/^\//, '')
+      
+      console.log('[getForwardPath] Final path (fallback):', path)
+      return path || '/'
+    } catch (e) {
+      console.error('[getForwardPath] Error:', e)
+      // If URL parsing fails, try to extract path manually
+      const forwardDomain = domain.forward_domain.replace(/\/$/, '')
+      if (fullUrl.startsWith(forwardDomain)) {
+        let path = fullUrl.substring(forwardDomain.length)
+        
+        // Remove query string
+        const queryIndex = path.indexOf('?')
+        if (queryIndex >= 0) {
+          path = path.substring(0, queryIndex)
+        }
+        
+        // Remove mapping path prefix
+        let mappingPath = domain.path
+        if (mappingPath.endsWith('/*')) {
+          mappingPath = mappingPath.slice(0, -1)
+        }
+        if (path.startsWith(mappingPath)) {
+          path = path.substring(mappingPath.length)
+        }
+        path = path.replace(/^\//, '')
+        
+        console.log('[getForwardPath] Final path (error fallback):', path)
+        return path || '/'
+      }
+      console.error('[getForwardPath] All extraction methods failed')
+    }
+    
+    return 'N/A'
+  }
+
   if (loading) {
     return <div className="text-center py-8">Loading...</div>
   }
@@ -84,6 +220,7 @@ function ApiLogs() {
               <tr>
                 <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
                 <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Forward Path</th>
                 <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Created At</th>
                 <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -91,12 +228,17 @@ function ApiLogs() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {logs.map((log) => (
-                <tr key={log.id}>
+                <tr key={log.id} className="hover:bg-gray-50">
                   <td className="px-3 md:px-6 py-4 whitespace-nowrap">{log.id}</td>
                   <td className="px-3 md:px-6 py-4 whitespace-nowrap">
                     <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
                       {log.method}
                     </span>
+                  </td>
+                  <td className="px-3 md:px-6 py-4">
+                    <div className="max-w-md truncate text-xs md:text-sm text-gray-700" title={getForwardPath(log.toCUrl)}>
+                      {getForwardPath(log.toCUrl)}
+                    </div>
                   </td>
                   <td className="px-3 md:px-6 py-4 whitespace-nowrap">
                     {log.status && (

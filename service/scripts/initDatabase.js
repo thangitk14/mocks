@@ -110,6 +110,47 @@ async function initDatabase() {
       console.log('ADMIN role assigned to admin user');
     }
 
+    // Create mapping_domains table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS mapping_domains (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        project_name VARCHAR(255) NOT NULL,
+        path VARCHAR(255) NOT NULL UNIQUE,
+        forward_domain VARCHAR(255) NOT NULL,
+        created_by INT DEFAULT 0,
+        updated_by INT DEFAULT 0,
+        state ENUM('Active', 'InActive') DEFAULT 'Active',
+        forward_state ENUM('SomeApi', 'AllApi', 'NoneApi') DEFAULT 'NoneApi',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_path (path),
+        INDEX idx_state (state),
+        INDEX idx_forward_state (forward_state)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+    console.log('Mapping domains table created or already exists');
+
+    // Create api_logs table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS api_logs (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        domain_id INT NOT NULL,
+        headers TEXT,
+        body TEXT,
+        query TEXT,
+        method VARCHAR(10) NOT NULL,
+        status INT,
+        toCUrl TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (domain_id) REFERENCES mapping_domains(id) ON DELETE CASCADE,
+        INDEX idx_domain_id (domain_id),
+        INDEX idx_created_at (created_at),
+        INDEX idx_method (method),
+        INDEX idx_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+    console.log('API logs table created or already exists');
+
     console.log('\nDatabase initialization completed successfully!');
     console.log('\nDefault roles created:');
     console.log('- ADMIN: Full access (path: /*)');

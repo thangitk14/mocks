@@ -9,14 +9,15 @@ const {
 } = require('../controllers/mappingDomainController');
 const authenticate = require('../middleware/auth');
 
-// All routes require authentication
-router.use(authenticate);
-
-// Get all mapping domains
+// Public routes (for HostForward service)
+// Get all mapping domains - public access
 router.get('/', getAllMappingDomains);
 
-// Get mapping domain by ID
+// Get mapping domain by ID - public access
 router.get('/:id', getMappingDomainById);
+
+// Protected routes (require authentication)
+router.use(authenticate);
 
 // Create mapping domain
 router.post('/', createMappingDomain);

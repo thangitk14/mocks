@@ -1,37 +1,139 @@
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { mappingDomainService } from '../services/mappingDomainService'
+import { useError } from '../contexts/ErrorContext'
 
 function Dashboard() {
   const { user } = useAuth()
-  const profile = user?.user;
+  const profile = user?.user
+  const navigate = useNavigate()
+  const [mappingDomains, setMappingDomains] = useState([])
+  const [loading, setLoading] = useState(true)
+  const { showError } = useError()
+
+  useEffect(() => {
+    fetchMappingDomains()
+  }, [])
+
+  const fetchMappingDomains = async () => {
+    try {
+      setLoading(true)
+      const response = await mappingDomainService.getAll()
+      const domains = response.data?.mappingDomains || []
+      setMappingDomains(domains)
+    } catch (error) {
+      showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to load mapping domains')
+      setMappingDomains([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Group domains by project_name
+  const groupedDomains = mappingDomains.reduce((acc, domain) => {
+    const projectName = domain.project_name || 'Other'
+    if (!acc[projectName]) {
+      acc[projectName] = []
+    }
+    acc[projectName].push(domain)
+    return acc
+  }, {})
+
+  const handleDomainClick = (domainId) => {
+    navigate(`/mapping-domain/${domainId}/logs`)
+  }
+
+  const getStateColor = (state) => {
+    return state === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+  }
+
+  const getForwardStateColor = (forwardState) => {
+    if (forwardState === 'AllApi') return 'bg-blue-100 text-blue-800'
+    if (forwardState === 'SomeApi') return 'bg-yellow-100 text-yellow-800'
+    return 'bg-gray-100 text-gray-800'
+  }
 
   return (
     <div>
       <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Dashboard</h2>
-      <div className="bg-white p-4 md:p-6 rounded-lg shadow">
-        <div className="mb-4 md:mb-6">
-          <h3 className="text-base md:text-lg font-semibold mb-2">User information</h3>
-          <div className="space-y-2 text-gray-700 text-sm md:text-base">
-            <p><span className="font-medium">Name:</span> {profile?.name || 'N/A'}</p>
-            <p><span className="font-medium">Username:</span> {profile?.username || 'N/A'}</p>
-            <p><span className="font-medium">ID:</span> {profile?.id || 'N/A'}</p>
-          </div>
-        </div>
-        
-        {user?.roles && user.roles.length > 0 && (
-          <div>
-            <h3 className="text-base md:text-lg font-semibold mb-2">Your roles</h3>
-            <div className="flex flex-wrap gap-2">
-              {user.roles.map((role) => (
-                <span
-                  key={role.id}
-                  className="px-2 md:px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs md:text-sm"
-                >
-                  {role.name} ({role.code})
-                </span>
-              ))}
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        {/* User Information */}
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow">
+          <div className="mb-4 md:mb-6">
+            <h3 className="text-base md:text-lg font-semibold mb-2">User information</h3>
+            <div className="space-y-2 text-gray-700 text-sm md:text-base">
+              <p><span className="font-medium">Name:</span> {profile?.name || 'N/A'}</p>
+              <p><span className="font-medium">Username:</span> {profile?.username || 'N/A'}</p>
+              <p><span className="font-medium">ID:</span> {profile?.id || 'N/A'}</p>
             </div>
           </div>
-        )}
+          
+          {user?.roles && user.roles.length > 0 && (
+            <div>
+              <h3 className="text-base md:text-lg font-semibold mb-2">Your roles</h3>
+              <div className="flex flex-wrap gap-2">
+                {user.roles.map((role) => (
+                  <span
+                    key={role.id}
+                    className="px-2 md:px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs md:text-sm"
+                  >
+                    {role.name} ({role.code})
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Mapping Domains */}
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow">
+          <h3 className="text-base md:text-lg font-semibold mb-4">Mapping Domains</h3>
+          {loading ? (
+            <div className="text-center py-4 text-gray-500">Loading...</div>
+          ) : Object.keys(groupedDomains).length === 0 ? (
+            <div className="text-center py-4 text-gray-500">No mapping domains found</div>
+          ) : (
+            <div className="space-y-4 max-h-[600px] overflow-y-auto">
+              {Object.entries(groupedDomains).map(([projectName, domains]) => (
+                <div key={projectName} className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
+                  <h4 className="text-sm md:text-base font-semibold text-gray-700 mb-2">
+                    {projectName}
+                  </h4>
+                  <div className="space-y-2">
+                    {domains.map((domain) => (
+                      <div
+                        key={domain.id}
+                        onClick={() => handleDomainClick(domain.id)}
+                        className="p-3 bg-gray-50 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors border border-gray-200 hover:border-blue-300"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs md:text-sm font-medium text-gray-900 truncate">
+                              {domain.path}
+                            </div>
+                            <div className="text-xs text-gray-600 truncate mt-1">
+                              → {domain.forward_domain}
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-1 items-end flex-shrink-0">
+                            <span className={`px-2 py-0.5 rounded text-xs ${getStateColor(domain.state)}`}>
+                              {domain.state}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded text-xs ${getForwardStateColor(domain.forward_state)}`}>
+                              {domain.forward_state}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
