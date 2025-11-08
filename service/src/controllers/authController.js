@@ -5,7 +5,7 @@ const ERROR_CODES = require('../utils/errorCodes');
 
 const register = async (req, res, next) => {
   try {
-    const { name, username, password, role_user_id } = req.body;
+    const { name, username, password } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findByUsername(username);
@@ -18,8 +18,7 @@ const register = async (req, res, next) => {
       name,
       username,
       password,
-      created_by: 0, // System created
-      role_user_id
+      created_by: 0 // System created
     });
 
     // Get created user (without password)
@@ -34,8 +33,7 @@ const register = async (req, res, next) => {
         user: {
           id: user.id,
           name: user.name,
-          username: user.username,
-          role_user_id: user.role_user_id
+          username: user.username
         },
         token
       }
@@ -80,8 +78,7 @@ const login = async (req, res, next) => {
         user: {
           id: user.id,
           name: user.name,
-          username: user.username,
-          role_user_id: user.role_user_id
+          username: user.username
         },
         token
       }
@@ -105,8 +102,7 @@ const getProfile = async (req, res, next) => {
         user: {
           id: user.id,
           name: user.name,
-          username: user.username,
-          role_user_id: user.role_user_id
+          username: user.username
         },
         roles
       }

@@ -47,6 +47,7 @@ services:
         condition: service_healthy
     volumes:
       - ./src:/app/src
+      - ./scripts:/app/scripts
       - ./package.json:/app/package.json
       - /app/node_modules
     networks:

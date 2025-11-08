@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const roleController = require('../controllers/roleController');
-const { authenticate } = require('../middleware/auth');
-const { authorize } = require('../middleware/authorize');
+const authenticate = require('../middleware/auth');
+const authorize = require('../middleware/authorize');
 const { body, param } = require('express-validator');
-const { validate } = require('../middleware/validate');
+const validate = require('../middleware/validate');
 
 // Validation rules
 const createRoleValidation = [

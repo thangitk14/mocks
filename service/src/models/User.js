@@ -3,18 +3,18 @@ const bcrypt = require('bcryptjs');
 const USER_STATES = require('../constants/userStates');
 
 class User {
-  static async create({ name, username, password, created_by, role_user_id, state, expired_time }) {
+  static async create({ name, username, password, created_by, state, expired_time }) {
     const hashedPassword = await bcrypt.hash(password, 10);
     const [result] = await db.execute(
-      'INSERT INTO users (name, username, password, created_by, updated_by, role_user_id, state, expired_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, username, hashedPassword, created_by, created_by, role_user_id, state || USER_STATES.ACTIVE, expired_time || null]
+      'INSERT INTO users (name, username, password, created_by, updated_by, state, expired_time) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, username, hashedPassword, created_by, created_by, state || USER_STATES.ACTIVE, expired_time || null]
     );
     return result.insertId;
   }
 
   static async findById(id) {
     const [rows] = await db.execute(
-      'SELECT id, name, username, created_by, updated_by, role_user_id, state, expired_time, created_at, updated_at FROM users WHERE id = ?',
+      'SELECT id, name, username, created_by, updated_by, state, expired_time, created_at, updated_at FROM users WHERE id = ?',
       [id]
     );
     return rows[0];
@@ -28,7 +28,7 @@ class User {
     return rows[0];
   }
 
-  static async update(id, { name, username, password, updated_by, role_user_id, state, expired_time }) {
+  static async update(id, { name, username, password, updated_by, state, expired_time }) {
     const updates = [];
     const values = [];
 
@@ -44,10 +44,6 @@ class User {
       const hashedPassword = await bcrypt.hash(password, 10);
       updates.push('password = ?');
       values.push(hashedPassword);
-    }
-    if (role_user_id !== undefined) {
-      updates.push('role_user_id = ?');
-      values.push(role_user_id);
     }
     if (state !== undefined) {
       updates.push('state = ?');

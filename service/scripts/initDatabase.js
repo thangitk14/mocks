@@ -32,7 +32,6 @@ async function initDatabase() {
         password VARCHAR(255) NOT NULL,
         created_by INT DEFAULT 0,
         updated_by INT DEFAULT 0,
-        role_user_id INT,
         state ENUM('Active', 'InActive', 'Expired') DEFAULT 'Active',
         expired_time DATETIME NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
