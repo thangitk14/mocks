@@ -54,7 +54,7 @@ VALUES (
   1,
   'System Administrator',
   'admin',
-  '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', -- Test@123
+  '$2a$10$tAjbvG5/Z9Ts149obxmokeDTD3MBQ79jGHBDJH/nHCiiuDJvRmWFu', -- Test@123
   0,
   0,
   'Active',
