@@ -25,6 +25,11 @@ function LeftNavigator({ onToggle }) {
       label: 'Users',
       permission: '/users/*',
     },
+    {
+      path: '/mapping-domain',
+      label: 'MappingDomain',
+      permission: '/config/*',
+    },
   ]
 
   const visibleItems = navItems.filter((item) =>

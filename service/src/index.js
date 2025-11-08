@@ -8,6 +8,8 @@ const authRoutes = require('./routes/authRoutes');
 const roleRoutes = require('./routes/roleRoutes');
 const roleUserRoutes = require('./routes/roleUserRoutes');
 const userRoutes = require('./routes/userRoutes');
+const mappingDomainRoutes = require('./routes/mappingDomainRoutes');
+const apiLogRoutes = require('./routes/apiLogRoutes');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -28,6 +30,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/role-user', roleUserRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/config/mappingDomain', mappingDomainRoutes);
+app.use('/api/logs', apiLogRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

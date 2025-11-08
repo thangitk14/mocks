@@ -1,0 +1,19 @@
+Tổng quan hệ thống hỗ trợ debug xem log, mock realtime cho các client khi call lên HostForward:
+ - Portal: tạo config thông qua api service
+ - Service: Xử lý logic config
+ - HostForward: Là 1 domain giống như service nhưng chịu trách nhiệm forward các api, ghi log trạng thái các api.
+ Cho phép custom mock theo từng api khi ở client (mobile) call lên.
+
+Service thêm api cho bao gồm các chức năng thêm sửa xoá.
+ - Model MappingDomain /config/mappingDomain/*: id, project_name, path, forward_domain, created_by, updated_by, state (Active, InActive), forward_state (SomeApi chỉ 1 vài api forward, AllApi tắt cả các api đều forward, NoneApi Không forward bất kỳ api nào).
+ Client call mỗi path sẽ forward qua mỗi domain khác nhau.
+ - Model ApiLogs "/logs/*": id, domain_id, headers, body, query, method, status (200, 300...500...), toCUrl (curl call qua forward domain), created_at.
+  => Model để lưu tất cả các api từ client call filter theo row mapping forward.
+
+Portal :
+ - thêm 1 Navigation MappingDomain: Theo api service thêm sửa xoá. (Click vào row này sẽ hiển thị logs api)
+ - thêm 1 màn hình Logs với tiêu đề là forward_domain (Hiện tất cả các forward cho domain này). Khi click cUrl hiển thị curl lên 1 dialogm trong dialog có nút copy để copy toàn bộ curl
+
+VD: Ở client call api https://HostForward/test/* (path = /test) sẽ forward toàn bộ request qua domain MappingDomain.forward_domain/*
+
+HostForward: Tạo 1 project lấy config từ service MappingDomain. Forward theo config. Support cho tất cả method: POST PUT GET DELETE PATCH
