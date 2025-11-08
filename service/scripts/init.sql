@@ -102,3 +102,25 @@ CREATE TABLE IF NOT EXISTS api_logs (
   INDEX idx_method (method),
   INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Create mock_responses table
+CREATE TABLE IF NOT EXISTS mock_responses (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  domain_id INT NOT NULL,
+  name VARCHAR(500),
+  path VARCHAR(500) NOT NULL,
+  method VARCHAR(10) NOT NULL,
+  status_code INT NOT NULL,
+  delay INT DEFAULT 0,
+  headers TEXT,
+  body TEXT,
+  state ENUM('Active', 'Forward') DEFAULT 'Active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (domain_id) REFERENCES mapping_domains(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_domain_path_method (domain_id, path, method),
+  INDEX idx_domain_id (domain_id),
+  INDEX idx_path (path),
+  INDEX idx_method (method),
+  INDEX idx_state (state)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

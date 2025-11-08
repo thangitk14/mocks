@@ -52,6 +52,79 @@ const forwardRequest = async (req, res, next) => {
     const cleanForwardPath = forwardPath.startsWith('/') ? forwardPath : `/${forwardPath}`;
     const forwardUrl = `${cleanForwardDomain}${cleanForwardPath}`;
 
+    // Check for mock response before forwarding
+    // Normalize path: remove leading slash, but keep '/' for root
+    let relativePath = forwardPath.replace(/^\//, '');
+    if (relativePath === '') {
+      relativePath = '/';
+    }
+    
+    const serviceUrl = process.env.SERVICE_URL || 'http://localhost:3000';
+    
+    try {
+      const mockResponse = await axios.get(`${serviceUrl}/api/mock-responses/path`, {
+        params: {
+          domainId: domain.id,
+          path: relativePath,
+          method: req.method
+        },
+        timeout: 2000
+      }).then(response => response.data?.data?.mockResponse).catch(() => null);
+
+      // If mock response exists and is Active, return mock response
+      if (mockResponse && mockResponse.state === 'Active') {
+        // Apply delay if specified
+        if (mockResponse.delay > 0) {
+          await new Promise(resolve => setTimeout(resolve, mockResponse.delay));
+        }
+
+        // Calculate duration
+        const duration = Date.now() - startTime;
+
+        // Store request info for logging (mock response)
+        req.forwardInfo = {
+          domain,
+          forwardUrl,
+          responseStatus: mockResponse.status_code,
+          responseData: mockResponse.body,
+          responseHeaders: mockResponse.headers || {},
+          duration,
+          isMock: true
+        };
+
+        // Call logRequest directly (fire and forget - don't await)
+        logRequest(req, res, () => {}).catch(err => {
+          console.error('Error calling logRequest:', err.message);
+        });
+
+        // Return mock response
+        res.status(mockResponse.status_code);
+        
+        // Set mock response headers
+        if (mockResponse.headers && typeof mockResponse.headers === 'object') {
+          Object.entries(mockResponse.headers).forEach(([key, value]) => {
+            res.setHeader(key, value);
+          });
+        }
+        
+        // Return mock response body
+        if (mockResponse.body !== null && mockResponse.body !== undefined) {
+          if (typeof mockResponse.body === 'string') {
+            res.send(mockResponse.body);
+          } else {
+            res.json(mockResponse.body);
+          }
+        } else {
+          res.end();
+        }
+        
+        return; // Exit early, don't forward
+      }
+    } catch (error) {
+      // If mock check fails, continue with normal forwarding
+      console.warn('[Mock] Failed to check mock response, continuing with forward:', error.message);
+    }
+
     // Prepare request options
     const headers = { ...req.headers };
     delete headers.host;

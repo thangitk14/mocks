@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { apiLogService } from '../services/apiLogService'
 import { mappingDomainService } from '../services/mappingDomainService'
+import { mockResponseService } from '../services/mockResponseService'
 import { useError } from '../contexts/ErrorContext'
 import { connectSocket, disconnectSocket, joinDomainRoom, leaveDomainRoom, getSocket } from '../services/socketService'
 
@@ -19,6 +20,16 @@ function ApiLogs() {
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
   const [total, setTotal] = useState(0)
+  const [mockResponses, setMockResponses] = useState({}) // Map logId -> mockResponse
+  const [selectedMockLog, setSelectedMockLog] = useState(null) // Log selected for mock dialog
+  const [mockFormData, setMockFormData] = useState({
+    statusCode: '',
+    delay: '',
+    headers: '',
+    body: '',
+    state: 'Active'
+  })
+  const [mockFormLoading, setMockFormLoading] = useState(false)
   const { showError } = useError()
 
   const fetchDomain = async () => {
@@ -54,6 +65,37 @@ function ApiLogs() {
   useEffect(() => {
     fetchLogs()
   }, [domainId, page, limit])
+
+  // Fetch mock responses for all logs
+  useEffect(() => {
+    const fetchMockResponses = async () => {
+      if (!domain || logs.length === 0) return
+      
+      const mockMap = {}
+      for (const log of logs) {
+        try {
+          let path = getForwardPath(log.toCUrl)
+          if (path && path !== 'N/A') {
+            // Normalize path: remove leading slash, but keep '/' for root
+            path = path.replace(/^\//, '')
+            if (path === '') {
+              path = '/'
+            }
+            
+            const response = await mockResponseService.getByPath(domainId, path, log.method)
+            if (response.data?.mockResponse) {
+              mockMap[log.id] = response.data.mockResponse
+            }
+          }
+        } catch (error) {
+          // Mock response not found, ignore
+        }
+      }
+      setMockResponses(mockMap)
+    }
+    
+    fetchMockResponses()
+  }, [logs, domain, domainId])
 
   useEffect(() => {
     // Connect to socket and join domain room
@@ -303,18 +345,143 @@ function ApiLogs() {
     }
   }
 
+  // Handle mock button click
+  const handleMockClick = (log) => {
+    let path = getForwardPath(log.toCUrl)
+    if (!path || path === 'N/A') {
+      showError('Cannot determine path for this log')
+      return
+    }
+    
+    // Normalize path: remove leading slash, but keep '/' for root
+    path = path.replace(/^\//, '')
+    if (path === '') {
+      path = '/'
+    }
+
+    const existingMock = mockResponses[log.id]
+    
+    // Load form data from log or existing mock
+    setMockFormData({
+      statusCode: existingMock?.status_code?.toString() || log.status?.toString() || '200',
+      delay: existingMock?.delay?.toString() || log.duration?.toString() || '0',
+      headers: existingMock?.headers 
+        ? JSON.stringify(existingMock.headers, null, 2)
+        : log.responseHeaders 
+        ? JSON.stringify(log.responseHeaders, null, 2)
+        : '{}',
+      body: existingMock?.body 
+        ? (typeof existingMock.body === 'string' ? existingMock.body : JSON.stringify(existingMock.body, null, 2))
+        : log.responseBody 
+        ? (typeof log.responseBody === 'string' ? log.responseBody : JSON.stringify(log.responseBody, null, 2))
+        : '',
+      state: existingMock?.state || 'Active'
+    })
+    
+    setSelectedMockLog(log)
+  }
+
+  // Handle mock form submit
+  const handleMockSubmit = async () => {
+    if (!selectedMockLog || !domain) return
+
+    try {
+      setMockFormLoading(true)
+      let path = getForwardPath(selectedMockLog.toCUrl)
+      if (!path || path === 'N/A') {
+        showError('Cannot determine path for this log')
+        return
+      }
+      
+      // Normalize path: remove leading slash, but keep '/' for root
+      path = path.replace(/^\//, '')
+      if (path === '') {
+        path = '/'
+      }
+
+      // Parse JSON fields
+      let headers = {}
+      let body = null
+      
+      try {
+        headers = mockFormData.headers ? JSON.parse(mockFormData.headers) : {}
+      } catch (e) {
+        showError('Invalid JSON format for headers')
+        setMockFormLoading(false)
+        return
+      }
+
+      try {
+        if (mockFormData.body.trim()) {
+          body = JSON.parse(mockFormData.body)
+        }
+      } catch (e) {
+        // If body is not JSON, treat as string
+        body = mockFormData.body
+      }
+
+      const existingMock = mockResponses[selectedMockLog.id]
+      
+      if (existingMock) {
+        // Update existing mock
+        await mockResponseService.update(existingMock.id, {
+          status_code: parseInt(mockFormData.statusCode),
+          delay: parseInt(mockFormData.delay) || 0,
+          headers,
+          body,
+          state: mockFormData.state
+        })
+      } else {
+        // Create new mock
+        await mockResponseService.create({
+          domain_id: parseInt(domainId),
+          path,
+          method: selectedMockLog.method,
+          status_code: parseInt(mockFormData.statusCode),
+          delay: parseInt(mockFormData.delay) || 0,
+          headers,
+          body,
+          state: mockFormData.state
+        })
+      }
+
+      // Refresh mock responses
+      const response = await mockResponseService.getByPath(domainId, path, selectedMockLog.method)
+      if (response.data?.mockResponse) {
+        setMockResponses(prev => ({
+          ...prev,
+          [selectedMockLog.id]: response.data.mockResponse
+        }))
+      }
+
+      setSelectedMockLog(null)
+    } catch (error) {
+      showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to save mock response')
+    } finally {
+      setMockFormLoading(false)
+    }
+  }
+
   return (
     <div>
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleBack}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
+          >
+            ← Back
+          </button>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">
+            API Logs - {domain?.forward_domain || 'Loading...'}
+          </h2>
+        </div>
         <button
-          onClick={handleBack}
-          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
+          onClick={() => navigate(`/mapping-domain/${domainId}/mocks`, { state: location.state })}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
         >
-          ← Back
+          Mocks
         </button>
-        <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">
-          API Logs - {domain?.forward_domain || 'Loading...'}
-        </h2>
       </div>
 
       {/* Pagination Controls - Top */}
@@ -342,26 +509,26 @@ function ApiLogs() {
           <table className="w-full min-w-[640px]">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-3 md:px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ID</th>
-                <th className="px-3 md:px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Method</th>
-                <th className="px-3 md:px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Forward Path</th>
-                <th className="px-3 md:px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
-                <th className="px-3 md:px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Duration</th>
-                <th className="px-3 md:px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase hidden md:table-cell">Created At</th>
-                <th className="px-3 md:px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
+                <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ID</th>
+                <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Method</th>
+                <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Forward Path</th>
+                <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
+                <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Duration</th>
+                <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase hidden md:table-cell">Created At</th>
+                <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
               {logs.map((log) => (
                 <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-3 md:px-6 py-2 whitespace-nowrap text-gray-900 dark:text-white text-sm">{log.id}</td>
-                  <td className="px-3 md:px-6 py-2 whitespace-nowrap">
+                  <td className="px-2 md:px-3 py-2 whitespace-nowrap text-gray-900 dark:text-white text-sm">{log.id}</td>
+                  <td className="px-2 md:px-3 py-2 whitespace-nowrap">
                     <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs font-medium">
                       {log.method}
                     </span>
                   </td>
                   <td 
-                    className="px-3 md:px-6 py-2 cursor-pointer"
+                    className="px-2 md:px-3 py-2 cursor-pointer"
                     onClick={() => {
                       setSelectedLog(log)
                       setShowResponseHeaders(false)
@@ -372,7 +539,7 @@ function ApiLogs() {
                       {getForwardPath(log.toCUrl)}
                     </div>
                   </td>
-                  <td className="px-3 md:px-6 py-2 whitespace-nowrap">
+                  <td className="px-2 md:px-3 py-2 whitespace-nowrap">
                     {log.status && (
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                         log.status >= 200 && log.status < 300 
@@ -387,7 +554,7 @@ function ApiLogs() {
                       </span>
                     )}
                   </td>
-                  <td className="px-3 md:px-6 py-2 whitespace-nowrap text-gray-900 dark:text-white text-sm">
+                  <td className="px-2 md:px-3 py-2 whitespace-nowrap text-gray-900 dark:text-white text-sm">
                     {log.duration !== null && log.duration !== undefined ? (
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                         log.duration < 500
@@ -402,14 +569,27 @@ function ApiLogs() {
                       <span className="text-gray-400 dark:text-gray-500 text-xs">N/A</span>
                     )}
                   </td>
-                  <td className="px-3 md:px-6 py-2 whitespace-nowrap hidden md:table-cell text-gray-900 dark:text-white text-sm">
+                  <td className="px-2 md:px-3 py-2 whitespace-nowrap hidden md:table-cell text-gray-900 dark:text-white text-sm">
                     {log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A'}
                   </td>
                   <td 
-                    className="px-3 md:px-6 py-2 whitespace-nowrap"
+                    className="px-2 md:px-3 py-2 whitespace-nowrap"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex gap-2 items-center">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleMockClick(log)
+                        }}
+                        className={`px-2 py-1 rounded text-xs font-medium transition ${
+                          mockResponses[log.id]
+                            ? 'bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700'
+                            : 'bg-gray-400 dark:bg-gray-600 text-white hover:bg-gray-500 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        Mock
+                      </button>
                       {log.toCUrl && (
                         <button
                           onClick={(e) => {
@@ -652,6 +832,123 @@ function ApiLogs() {
                 className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded hover:bg-gray-600 dark:hover:bg-gray-700 transition"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mock Response Dialog */}
+      {selectedMockLog && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedMockLog(null)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b dark:border-gray-700">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white">Mock Response</h3>
+                <button
+                  onClick={() => setSelectedMockLog(null)}
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl transition"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            <div className="p-6 overflow-auto flex-1">
+              <div className="space-y-4">
+                {/* Status Code */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Status Code
+                  </label>
+                  <input
+                    type="number"
+                    value={mockFormData.statusCode}
+                    onChange={(e) => setMockFormData({ ...mockFormData, statusCode: e.target.value })}
+                    className="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    placeholder="200"
+                  />
+                </div>
+
+                {/* Delay */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Delay (milliseconds)
+                  </label>
+                  <input
+                    type="number"
+                    value={mockFormData.delay}
+                    onChange={(e) => setMockFormData({ ...mockFormData, delay: e.target.value })}
+                    className="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    placeholder="0"
+                  />
+                </div>
+
+                {/* Headers */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Headers (JSON format)
+                  </label>
+                  <textarea
+                    value={mockFormData.headers}
+                    onChange={(e) => setMockFormData({ ...mockFormData, headers: e.target.value })}
+                    className="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 font-mono text-sm"
+                    rows={8}
+                    style={{ maxHeight: '200px', overflowY: 'auto' }}
+                    placeholder='{"Content-Type": "application/json"}'
+                  />
+                </div>
+
+                {/* Body */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Body (JSON format or plain text)
+                  </label>
+                  <textarea
+                    value={mockFormData.body}
+                    onChange={(e) => setMockFormData({ ...mockFormData, body: e.target.value })}
+                    className="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 font-mono text-sm"
+                    rows={12}
+                    style={{ maxHeight: '300px', overflowY: 'auto' }}
+                    placeholder='{"message": "Hello World"}'
+                  />
+                </div>
+
+                {/* State */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    State
+                  </label>
+                  <select
+                    value={mockFormData.state}
+                    onChange={(e) => setMockFormData({ ...mockFormData, state: e.target.value })}
+                    className="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Forward">Forward</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t dark:border-gray-700 flex justify-end gap-2">
+              <button
+                onClick={() => setSelectedMockLog(null)}
+                className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded hover:bg-gray-600 dark:hover:bg-gray-700 transition"
+                disabled={mockFormLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleMockSubmit}
+                className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={mockFormLoading}
+              >
+                {mockFormLoading ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>

@@ -1,0 +1,15 @@
+portal:
+Ở danh sách log tương ứng mỗi dòng đều có 1 button action là "mock":
+ - Có 2 trạng thái:
+   + background xám là chưa có mock. Khi click vào sẽ mở dialog cho phép nhập form tạo mock bao gồm các field:
+    status (Cho phép nhập mã code mock response), deplay (tính theo milis, thời gian chờ trước khi response mock, có set max-height scroll trong tránh quá dài), headers (json format header), body (json format body, có set max-height scroll trong tránh quá dài). headers, body, statusCode, duration sẽ đưa vào delay load lên form sẵn.
+    Các trường headers body kiểu logtext lưu vào db qua service, state (1 dropdown ghi nhận trạng thái: Active (Là sẽ thực hiện trả về mock khi call vào path đang setting), Forward (Trạng thái xử lý theo hướng forward không mock response)).
+   + background màu xanh lá là đã có mock.
+
+service
+ - Model "MockResponse" ghi nhận thông tin sử dụng mock response: Id, statusCode, delay, headers, bodys, state.
+ Tạo các api thêm sửa xoá.
+ Thêm api lấy thông tin mock response theo path.
+
+host_forward:
+ - Khi có 1 request đến trước khi forward kiểm tra path có mock response thì lấy theo mock response trả về, ko gọi call api forward. Vẫn ghi nhận lịch sử request.

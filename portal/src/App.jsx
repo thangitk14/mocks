@@ -9,6 +9,7 @@ import RoleUser from './pages/RoleUser'
 import Users from './pages/Users'
 import MappingDomain from './pages/MappingDomain'
 import ApiLogs from './pages/ApiLogs'
+import MockResponses from './pages/MockResponses'
 import ErrorDialog from './components/ErrorDialog'
 import { ErrorProvider } from './contexts/ErrorContext'
 import { ConfirmProvider } from './contexts/ConfirmContext'
@@ -42,6 +43,7 @@ function AppRoutes() {
         <Route path="users" element={<Users />} />
         <Route path="mapping-domain" element={<MappingDomain />} />
         <Route path="mapping-domain/:domainId/logs" element={<ApiLogs />} />
+        <Route path="mapping-domain/:domainId/mocks" element={<MockResponses />} />
       </Route>
     </Routes>
   )

@@ -154,6 +154,45 @@ async function initDatabase() {
     `);
     console.log('API logs table created or already exists');
 
+    // Create mock_responses table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS mock_responses (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        domain_id INT NOT NULL,
+        name VARCHAR(500),
+        path VARCHAR(500) NOT NULL,
+        method VARCHAR(10) NOT NULL,
+        status_code INT NOT NULL,
+        delay INT DEFAULT 0,
+        headers TEXT,
+        body TEXT,
+        state ENUM('Active', 'Forward') DEFAULT 'Active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (domain_id) REFERENCES mapping_domains(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_domain_path_method (domain_id, path, method),
+        INDEX idx_domain_id (domain_id),
+        INDEX idx_path (path),
+        INDEX idx_method (method),
+        INDEX idx_state (state)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+    console.log('Mock responses table created or already exists');
+
+    // Add name column if it doesn't exist (for existing tables)
+    try {
+      await connection.query(`
+        ALTER TABLE mock_responses 
+        ADD COLUMN name VARCHAR(500)
+      `);
+      console.log('Name column added to mock_responses');
+    } catch (error) {
+      // Column might already exist, ignore error
+      if (error.message.includes('Duplicate column name')) {
+        console.log('Name column already exists in mock_responses');
+      }
+    }
+
     // Add response_headers and response_body columns if they don't exist (for existing tables)
     try {
       await connection.query(`
