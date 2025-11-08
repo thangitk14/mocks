@@ -55,7 +55,12 @@ function LeftNavigator({ onToggle }) {
           <li key={item.path}>
             <NavLink
               to={item.path}
-              onClick={onToggle}
+              onClick={(e) => {
+                // Only close navigation on mobile (when window width < 768px)
+                if (window.innerWidth < 768) {
+                  onToggle()
+                }
+              }}
               className={({ isActive }) =>
                 `block px-4 py-2 rounded transition text-sm md:text-base ${
                   isActive
