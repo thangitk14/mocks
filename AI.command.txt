@@ -1,0 +1,551 @@
+# MOCK API GATEWAY SYSTEM - PROJECT DOCUMENTATION
+
+## TỔNG QUAN PROJECT
+
+Đây là một hệ thống Mock API Gateway với 3 services chính:
+1. **Service** (Backend API) - Quản lý authentication, authorization, mapping domains, và API logs
+2. **Portal** (Frontend) - React admin portal để quản lý users, roles, mapping domains, và xem logs
+3. **Host Forward** (API Gateway) - Service forward requests dựa trên mapping domain configuration
+
+## KIẾN TRÚC HỆ THỐNG
+
+```
+┌─────────────┐
+│   Client    │
+└──────┬──────┘
+       │
+       │ HTTP Request
+       ▼
+┌─────────────────┐
+│  Host Forward    │  Port: 4000
+│  (API Gateway)   │
+└──────┬───────────┘
+       │
+       ├───► Forward to target domain
+       │
+       └───► POST /api/logs ──┐
+                               │
+                               ▼
+                    ┌──────────────────┐
+                    │     Service      │  Port: 3000
+                    │  (Backend API)   │
+                    └────────┬─────────┘
+                             │
+                             ├───► MySQL Database
+                             │
+                             └───► Socket.IO ──┐
+                                               │
+                                               ▼
+                                    ┌──────────────────┐
+                                    │     Portal       │  Port: 5173
+                                    │  (React Frontend) │
+                                    └──────────────────┘
+```
+
+## CẤU TRÚC THỰ MỤC
+
+```
+mocks/
+├── service/                    # Backend API Service
+│   ├── src/
+│   │   ├── config/
+│   │   │   ├── config.js       # Environment config loader
+│   │   │   └── database.js     # MySQL connection pool
+│   │   ├── constants/
+│   │   │   └── userStates.js   # User state constants
+│   │   ├── controllers/        # Request handlers
+│   │   │   ├── apiLogController.js
+│   │   │   ├── authController.js
+│   │   │   ├── mappingDomainController.js
+│   │   │   ├── roleController.js
+│   │   │   ├── roleUserController.js
+│   │   │   └── userController.js
+│   │   ├── middleware/
+│   │   │   ├── auth.js         # JWT authentication
+│   │   │   ├── authorize.js    # Role-based authorization
+│   │   │   ├── errorHandler.js # Error handling
+│   │   │   └── validate.js     # Request validation
+│   │   ├── models/             # Database models
+│   │   │   ├── ApiLog.js
+│   │   │   ├── MappingDomain.js
+│   │   │   ├── Role.js
+│   │   │   ├── RoleUser.js
+│   │   │   └── User.js
+│   │   ├── routes/             # API routes
+│   │   │   ├── apiLogRoutes.js
+│   │   │   ├── authRoutes.js
+│   │   │   ├── mappingDomainRoutes.js
+│   │   │   ├── roleRoutes.js
+│   │   │   ├── roleUserRoutes.js
+│   │   │   └── userRoutes.js
+│   │   ├── utils/
+│   │   │   ├── AppError.js     # Custom error class
+│   │   │   ├── errorCodes.js   # Error code definitions
+│   │   │   └── jwt.js           # JWT utilities
+│   │   └── index.js            # Express server + Socket.IO
+│   ├── scripts/
+│   │   ├── init.sql            # Database schema
+│   │   └── initDatabase.js     # Database initialization
+│   └── package.json
+│
+├── portal/                     # React Frontend
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── ConfirmDialog.jsx
+│   │   │   ├── ErrorDialog.jsx
+│   │   │   ├── Header.jsx
+│   │   │   └── LeftNavigator.jsx
+│   │   ├── contexts/
+│   │   │   ├── AuthContext.jsx      # Authentication context
+│   │   │   ├── ConfirmContext.jsx   # Confirmation dialog context
+│   │   │   └── ErrorContext.jsx     # Error handling context
+│   │   ├── pages/
+│   │   │   ├── ApiLogs.jsx          # API logs viewer (real-time)
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── MainPage.jsx        # Layout wrapper
+│   │   │   ├── MappingDomain.jsx    # Domain mapping management
+│   │   │   ├── Roles.jsx
+│   │   │   ├── RoleUser.jsx
+│   │   │   └── Users.jsx
+│   │   ├── services/
+│   │   │   ├── api.js               # Axios instance with interceptors
+│   │   │   ├── apiLogService.js
+│   │   │   ├── authService.js
+│   │   │   ├── mappingDomainService.js
+│   │   │   ├── roleService.js
+│   │   │   ├── roleUserService.js
+│   │   │   ├── socketService.js     # Socket.IO client service
+│   │   │   └── userService.js
+│   │   ├── App.jsx                  # Main app component with routing
+│   │   └── main.jsx                 # React entry point
+│   └── package.json
+│
+└── host_forward/               # API Gateway Service
+    ├── src/
+    │   ├── config/
+    │   │   └── configLoader.js      # Load mapping domains from service
+    │   ├── middleware/
+    │   │   └── forward.js           # Request forwarding logic
+    │   ├── utils/
+    │   │   └── curlGenerator.js     # Generate cURL commands
+    │   └── index.js                 # Express server
+    └── package.json
+```
+
+## DATABASE SCHEMA
+
+### Tables
+
+#### 1. users
+- `id` (INT, PRIMARY KEY, AUTO_INCREMENT)
+- `name` (VARCHAR(255))
+- `username` (VARCHAR(255), UNIQUE)
+- `password` (VARCHAR(255)) - bcrypt hashed
+- `created_by` (INT)
+- `updated_by` (INT)
+- `state` (ENUM: 'Active', 'InActive', 'Expired')
+- `expired_time` (DATETIME, NULL)
+- `created_at` (TIMESTAMP)
+- `updated_at` (TIMESTAMP)
+
+#### 2. roles
+- `id` (INT, PRIMARY KEY, AUTO_INCREMENT)
+- `code` (VARCHAR(100), UNIQUE) - e.g., 'ADMIN', 'CONFIG_MANAGER'
+- `name` (VARCHAR(255))
+- `path` (VARCHAR(255)) - Permission path pattern, e.g., '/*', '/config/*'
+- `created_at` (TIMESTAMP)
+- `updated_at` (TIMESTAMP)
+
+#### 3. role_user (Junction table)
+- `id` (INT, PRIMARY KEY, AUTO_INCREMENT)
+- `user_id` (INT, FOREIGN KEY -> users.id)
+- `role_id` (INT, FOREIGN KEY -> roles.id)
+- `created_at` (TIMESTAMP)
+- `updated_at` (TIMESTAMP)
+- UNIQUE KEY (user_id, role_id)
+
+#### 4. mapping_domains
+- `id` (INT, PRIMARY KEY, AUTO_INCREMENT)
+- `project_name` (VARCHAR(255))
+- `path` (VARCHAR(255), UNIQUE) - Mapping path, e.g., '/vietbank/*', '/api/test'
+- `forward_domain` (VARCHAR(255)) - Target domain to forward to
+- `created_by` (INT)
+- `updated_by` (INT)
+- `state` (ENUM: 'Active', 'InActive')
+- `forward_state` (ENUM: 'SomeApi', 'AllApi', 'NoneApi')
+- `created_at` (TIMESTAMP)
+- `updated_at` (TIMESTAMP)
+
+#### 5. api_logs
+- `id` (INT, PRIMARY KEY, AUTO_INCREMENT)
+- `domain_id` (INT, FOREIGN KEY -> mapping_domains.id)
+- `headers` (TEXT, JSON)
+- `body` (TEXT, JSON)
+- `query` (TEXT, JSON)
+- `method` (VARCHAR(10)) - HTTP method
+- `status` (INT) - HTTP status code
+- `toCUrl` (TEXT) - Generated cURL command
+- `response_headers` (TEXT, JSON)
+- `response_body` (TEXT, JSON)
+- `created_at` (TIMESTAMP)
+
+### Default Data
+
+**Default Roles:**
+- ADMIN: '/*' (all paths)
+- CONFIG_MANAGER: '/config/*'
+- USER_MANAGER: '/users/*'
+- VIEWER: '/view/*'
+
+**Default Admin User:**
+- username: 'admin'
+- password: 'Test@123' (bcrypt hashed)
+- state: 'Active'
+- Has ADMIN role
+
+## API ENDPOINTS
+
+### Service API (Port 3000)
+
+#### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login (returns JWT token)
+- `GET /api/auth/profile` - Get current user profile (requires auth)
+
+#### Users
+- `GET /api/users` - Get all users (requires auth)
+- `GET /api/users/:id` - Get user by ID (requires auth)
+- `POST /api/users` - Create user (requires auth)
+- `PUT /api/users/:id` - Update user (requires auth)
+- `DELETE /api/users/:id` - Delete user (requires auth)
+
+#### Roles
+- `GET /api/roles` - Get all roles (requires auth)
+- `GET /api/roles/:id` - Get role by ID (requires auth)
+- `POST /api/roles` - Create role (requires auth)
+- `PUT /api/roles/:id` - Update role (requires auth)
+- `DELETE /api/roles/:id` - Delete role (requires auth)
+
+#### Role-User Assignment
+- `GET /api/role-user` - Get all role-user assignments (requires auth)
+- `POST /api/role-user` - Assign role to user (requires auth)
+- `DELETE /api/role-user/:id` - Remove role from user (requires auth)
+
+#### Mapping Domains
+- `GET /api/config/mappingDomain` - Get all mapping domains (requires auth)
+- `GET /api/config/mappingDomain/:id` - Get mapping domain by ID (requires auth)
+- `POST /api/config/mappingDomain` - Create mapping domain (requires auth)
+- `PUT /api/config/mappingDomain/:id` - Update mapping domain (requires auth)
+- `DELETE /api/config/mappingDomain/:id` - Delete mapping domain (requires auth)
+
+#### API Logs
+- `GET /api/logs` - Get all logs (optional query: domain_id, limit, offset)
+- `GET /api/logs/:id` - Get log by ID
+- `GET /api/logs/domain/:domainId` - Get logs by domain ID (query: limit, offset)
+- `POST /api/logs` - Create log (used by host_forward service)
+
+### Host Forward API (Port 4000)
+- `GET /health` - Health check
+- `ALL /*` - Forward all other requests based on mapping domain configuration
+
+## REAL-TIME FEATURES (Socket.IO)
+
+### Server Side (Service)
+- Socket.IO server initialized in `service/src/index.js`
+- Uses HTTP server created from Express app
+- CORS enabled for all origins
+- Room-based messaging: `domain-{domainId}`
+
+**Events:**
+- `connection` - Client connects
+- `join-domain` - Client joins domain room
+- `leave-domain` - Client leaves domain room
+- `disconnect` - Client disconnects
+
+**Emit Events:**
+- `new-api-log` - Emitted when new API log is created
+  - Payload: `{ log: ApiLogObject }`
+  - Sent to room: `domain-{domain_id}`
+
+### Client Side (Portal)
+- Socket.IO client in `portal/src/services/socketService.js`
+- Connects to service URL
+- Auto-reconnection enabled
+- Join/leave domain rooms for real-time updates
+
+**Usage in ApiLogs.jsx:**
+- Connects on component mount
+- Joins domain room based on `domainId` from URL params
+- Listens for `new-api-log` events
+- Adds new logs to list in real-time
+- Cleans up on component unmount
+
+## AUTHENTICATION & AUTHORIZATION
+
+### Authentication Flow
+1. User logs in via `POST /api/auth/login`
+2. Server validates credentials and returns JWT token
+3. Client stores token in localStorage
+4. Client includes token in `Authorization: Bearer {token}` header
+5. Server validates token via `auth.js` middleware
+
+### Authorization (Role-Based)
+- Roles have `path` patterns (e.g., '/*', '/config/*')
+- Users can have multiple roles
+- `authorize.js` middleware checks if user's roles match request path
+- Path matching supports wildcards (e.g., '/config/*' matches '/config/users')
+
+### User States
+- **Active**: User can login and access system
+- **InActive**: User cannot login
+- **Expired**: User account has expired (based on `expired_time` or state)
+
+## REQUEST FLOW
+
+### 1. Client Request → Host Forward
+```
+Client → GET /vietbank/api/users → Host Forward (Port 4000)
+```
+
+### 2. Host Forward Processing
+1. Receives request at path `/vietbank/api/users`
+2. Loads mapping domains from Service API (cached, refreshed every 30s)
+3. Finds matching mapping domain by path:
+   - Exact match: `/vietbank/api/users` → `/vietbank/api/users`
+   - Prefix match: `/vietbank/api/users` → `/vietbank/*`
+   - Wildcard match: `/vietbank/api/users` → `/vietbank/*`
+4. Checks `forward_state`:
+   - `NoneApi`: Returns 404
+   - `SomeApi`/`AllApi`: Proceeds to forward
+5. Calculates forward path:
+   - Removes mapping path prefix
+   - Example: `/vietbank/api/users` with mapping `/vietbank/*` → `/api/users`
+6. Forwards request to `forward_domain + forward_path`
+7. Generates cURL command
+8. Logs request to Service API (`POST /api/logs`)
+
+### 3. Service API Logging
+1. Receives log data from Host Forward
+2. Creates log entry in `api_logs` table
+3. Retrieves full log data
+4. Emits Socket.IO event `new-api-log` to room `domain-{domain_id}`
+
+### 4. Portal Real-Time Update
+1. Portal page `mapping-domain/{domainId}/logs` is open
+2. Socket.IO client connected and joined room `domain-{domainId}`
+3. Receives `new-api-log` event
+4. Adds new log to list immediately (no page refresh needed)
+
+## DEPENDENCIES
+
+### Service
+```json
+{
+  "express": "^4.18.2",
+  "mysql2": "^3.6.5",
+  "bcryptjs": "^2.4.3",
+  "jsonwebtoken": "^9.0.2",
+  "dotenv": "^16.3.1",
+  "cors": "^2.8.5",
+  "express-validator": "^7.0.1",
+  "socket.io": "^4.8.1"
+}
+```
+
+### Portal
+```json
+{
+  "react": "^18.2.0",
+  "react-dom": "^18.2.0",
+  "react-router-dom": "^6.20.0",
+  "axios": "^1.6.2",
+  "socket.io-client": "^4.8.1",
+  "tailwindcss": "^3.3.6",
+  "vite": "^5.0.8"
+}
+```
+
+### Host Forward
+```json
+{
+  "express": "^4.18.2",
+  "axios": "^1.6.0",
+  "dotenv": "^16.3.1",
+  "cors": "^2.8.5"
+}
+```
+
+## ENVIRONMENT VARIABLES
+
+### Service (.env.developer or .env.production)
+```
+NODE_ENV=developer
+PORT=3000
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=password
+DB_NAME=mocks_db
+JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=24h
+CORS_ORIGIN=*
+```
+
+### Portal (.env)
+```
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+### Host Forward (.env)
+```
+PORT=4000
+SERVICE_URL=http://localhost:3000
+```
+
+## SETUP & RUN
+
+### 1. Database Setup
+```bash
+# Create database
+mysql -u root -p
+CREATE DATABASE mocks_db;
+
+# Run initialization script
+cd service
+node scripts/initDatabase.js
+```
+
+### 2. Install Dependencies
+```bash
+# Service
+cd service
+yarn install
+
+# Portal
+cd portal
+yarn install
+
+# Host Forward
+cd host_forward
+yarn install
+```
+
+### 3. Configure Environment
+- Copy `.env.example` to `.env.developer` (service)
+- Create `.env` files for portal and host_forward
+- Update database credentials and URLs
+
+### 4. Run Services
+
+**Terminal 1 - Service:**
+```bash
+cd service
+yarn dev
+# Runs on http://localhost:3000
+```
+
+**Terminal 2 - Portal:**
+```bash
+cd portal
+yarn dev
+# Runs on http://localhost:5173
+```
+
+**Terminal 3 - Host Forward:**
+```bash
+cd host_forward
+yarn dev
+# Runs on http://localhost:4000
+```
+
+## KEY FEATURES
+
+### 1. Dynamic Request Forwarding
+- Path-based routing with wildcard support
+- Configurable forward states (SomeApi, AllApi, NoneApi)
+- Automatic path transformation
+
+### 2. Request Logging
+- Complete request/response logging
+- cURL command generation
+- Real-time log viewing
+
+### 3. Real-Time Updates
+- Socket.IO integration
+- Room-based messaging
+- Automatic UI updates without refresh
+
+### 4. User Management
+- User states (Active, InActive, Expired)
+- Expiration time support
+- Role-based access control
+
+### 5. Role-Based Authorization
+- Path pattern matching
+- Multiple roles per user
+- Wildcard path support
+
+## TESTING FLOW
+
+1. **Start all services** (Service, Portal, Host Forward)
+2. **Login to Portal** (http://localhost:5173)
+   - Username: `admin`
+   - Password: `Test@123`
+3. **Create Mapping Domain**:
+   - Project Name: `Test Project`
+   - Path: `/vietbank/*`
+   - Forward Domain: `https://api.example.com`
+   - State: `Active`
+   - Forward State: `AllApi`
+4. **Open Logs Page**: Navigate to `mapping-domain/{id}/logs`
+5. **Make API Request**:
+   ```bash
+   curl http://localhost:4000/vietbank/api/test
+   ```
+6. **Verify Real-Time Update**: New log should appear immediately in Portal
+
+## NOTES
+
+- Host Forward caches mapping domains and refreshes every 30 seconds
+- Socket.IO uses room-based messaging for efficient real-time updates
+- JWT tokens are stored in localStorage (consider httpOnly cookies for production)
+- Database uses connection pooling for better performance
+- All JSON fields in database are stored as TEXT and parsed in application layer
+- Error handling uses custom AppError class with error codes
+- CORS is enabled for all origins (configure properly for production)
+
+## FILE STRUCTURE PATTERNS
+
+### Controllers
+- Handle HTTP requests/responses
+- Call model methods
+- Emit Socket.IO events when needed
+- Use AppError for error handling
+
+### Models
+- Static methods for database operations
+- Return data or throw errors
+- Handle JSON parsing/stringifying
+
+### Middleware
+- `auth.js`: JWT token validation
+- `authorize.js`: Role-based path checking
+- `validate.js`: Request validation using express-validator
+- `errorHandler.js`: Centralized error handling
+
+### Services (Portal)
+- Axios-based API clients
+- Socket.IO client management
+- Context providers for state management
+
+## IMPORTANT IMPLEMENTATION DETAILS
+
+1. **Socket.IO Setup**: Server uses HTTP server from Express, not separate port
+2. **Room Naming**: Rooms use format `domain-{domainId}` (string concatenation)
+3. **Path Matching**: Supports exact match, prefix match, and wildcard patterns
+4. **Log Formatting**: Headers, body, query stored as JSON strings in database
+5. **cURL Generation**: Includes all headers, query params, and body
+6. **Real-Time Updates**: Checks for duplicate logs before adding to prevent duplicates
+7. **Error Codes**: Structured error codes (1000-6999) for different error types
+
