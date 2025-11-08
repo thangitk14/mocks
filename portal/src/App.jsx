@@ -8,6 +8,7 @@ import RoleUser from './pages/RoleUser'
 import Users from './pages/Users'
 import ErrorDialog from './components/ErrorDialog'
 import { ErrorProvider } from './contexts/ErrorContext'
+import { ConfirmProvider } from './contexts/ConfirmContext'
 
 function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useAuth()
@@ -44,12 +45,14 @@ function AppRoutes() {
 function App() {
   return (
     <ErrorProvider>
-      <AuthProvider>
-        <Router>
-          <AppRoutes />
-          <ErrorDialog />
-        </Router>
-      </AuthProvider>
+      <ConfirmProvider>
+        <AuthProvider>
+          <Router>
+            <AppRoutes />
+            <ErrorDialog />
+          </Router>
+        </AuthProvider>
+      </ConfirmProvider>
     </ErrorProvider>
   )
 }

@@ -28,6 +28,13 @@ class User {
     return rows[0];
   }
 
+  static async findAll() {
+    const [rows] = await db.execute(
+      'SELECT id, name, username, created_by, updated_by, state, expired_time, created_at, updated_at FROM users ORDER BY created_at DESC'
+    );
+    return rows;
+  }
+
   static async update(id, { name, username, password, updated_by, state, expired_time }) {
     const updates = [];
     const values = [];

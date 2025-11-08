@@ -7,6 +7,7 @@ require('./config/database'); // Initialize database connection
 const authRoutes = require('./routes/authRoutes');
 const roleRoutes = require('./routes/roleRoutes');
 const roleUserRoutes = require('./routes/roleUserRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -26,6 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/role-user', roleUserRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

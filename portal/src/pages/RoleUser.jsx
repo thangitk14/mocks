@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { roleUserService } from '../services/roleUserService'
 import { roleService } from '../services/roleService'
 import { useError } from '../contexts/ErrorContext'
+import { useConfirm } from '../contexts/ConfirmContext'
 
 function RoleUser() {
   const [userRoles, setUserRoles] = useState([])
@@ -11,6 +12,7 @@ function RoleUser() {
   const [showAssignForm, setShowAssignForm] = useState(false)
   const [assignData, setAssignData] = useState({ userId: '', roleId: '' })
   const { showError } = useError()
+  const { showConfirm } = useConfirm()
 
   useEffect(() => {
     fetchRoles()
@@ -25,9 +27,12 @@ function RoleUser() {
   const fetchRoles = async () => {
     try {
       const response = await roleService.getAll()
-      setRoles(response.data || [])
+      // API returns { success: true, data: { roles: [...] } }
+      const rolesData = response.data?.roles || response.data || []
+      setRoles(Array.isArray(rolesData) ? rolesData : [])
     } catch (error) {
       showError(error.response?.data?.message || 'Không thể tải danh sách roles')
+      setRoles([]) // Set empty array on error
     }
   }
 
@@ -35,9 +40,12 @@ function RoleUser() {
     try {
       setLoading(true)
       const response = await roleUserService.getUserRoles(userId)
-      setUserRoles(response.data || [])
+      // API returns { success: true, data: { userId, roles: [...] } }
+      const rolesData = response.data?.roles || response.data || []
+      setUserRoles(Array.isArray(rolesData) ? rolesData : [])
     } catch (error) {
       showError(error.response?.data?.message || 'Không thể tải roles của user')
+      setUserRoles([]) // Set empty array on error
     } finally {
       setLoading(false)
     }
@@ -61,8 +69,10 @@ function RoleUser() {
   }
 
   const handleRemoveRole = async (userId, roleId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa role này khỏi user?'))
-      return
+    const confirmed = await showConfirm(
+      'Bạn có chắc chắn muốn xóa role này khỏi user?'
+    )
+    if (!confirmed) return
 
     try {
       await roleUserService.removeRole(userId, roleId)

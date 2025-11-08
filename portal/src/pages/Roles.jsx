@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { roleService } from '../services/roleService'
 import { useError } from '../contexts/ErrorContext'
+import { useConfirm } from '../contexts/ConfirmContext'
 
 function Roles() {
   const [roles, setRoles] = useState([])
@@ -9,6 +10,7 @@ function Roles() {
   const [editingRole, setEditingRole] = useState(null)
   const [formData, setFormData] = useState({ code: '', name: '', path: '' })
   const { showError } = useError()
+  const { showConfirm } = useConfirm()
 
   useEffect(() => {
     fetchRoles()
@@ -53,7 +55,10 @@ function Roles() {
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa role này?')) return
+    const confirmed = await showConfirm(
+      'Bạn có chắc chắn muốn xóa role này?'
+    )
+    if (!confirmed) return
 
     try {
       await roleService.delete(id)
