@@ -29,7 +29,7 @@ function Users() {
       const usersData = response.data?.users || response.data || []
       setUsers(Array.isArray(usersData) ? usersData : [])
     } catch (error) {
-      showError(error.response?.data?.message || 'Không thể tải danh sách users')
+      showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to load users list')
       setUsers([]) // Set empty array on error
     } finally {
       setLoading(false)
@@ -49,7 +49,7 @@ function Users() {
       } else {
         // Create user - password is required
         if (!formData.password) {
-          showError('Mật khẩu là bắt buộc khi tạo user mới')
+          showError('Password is required when creating a new user')
           return
         }
         await userService.create(formData)
@@ -59,7 +59,7 @@ function Users() {
       setFormData({ name: '', username: '', password: '', state: 'Active' })
       fetchUsers()
     } catch (error) {
-      showError(error.response?.data?.message || 'Không thể lưu user')
+      showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to save user')
     }
   }
 
@@ -76,7 +76,7 @@ function Users() {
 
   const handleDelete = async (id) => {
     const confirmed = await showConfirm(
-      'Bạn có chắc chắn muốn vô hiệu hóa user này? (Soft delete - chỉ thay đổi state)'
+      'Are you sure you want to deactivate this user? (Soft delete - only changes state)'
     )
     if (!confirmed) return
 
@@ -84,7 +84,7 @@ function Users() {
       await userService.delete(id)
       fetchUsers()
     } catch (error) {
-      showError(error.response?.data?.message || 'Không thể xóa user')
+      showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to delete user')
     }
   }
 
@@ -102,13 +102,13 @@ function Users() {
   }
 
   if (loading) {
-    return <div className="text-center py-8">Đang tải...</div>
+    return <div className="text-center py-8">Loading...</div>
   }
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Quản lý Users</h2>
+        <h2 className="text-2xl font-bold">User Management</h2>
         <button
           onClick={() => {
             setShowForm(true)
@@ -117,18 +117,18 @@ function Users() {
           }}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
         >
-          Thêm User
+          Add User
         </button>
       </div>
 
       {showForm && (
         <div className="bg-white p-6 rounded-lg shadow mb-6">
           <h3 className="text-xl font-bold mb-4">
-            {editingUser ? 'Chỉnh sửa User' : 'Thêm User mới'}
+            {editingUser ? 'Edit User' : 'Add New User'}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-gray-700 mb-2">Tên</label>
+              <label className="block text-gray-700 mb-2">Name</label>
               <input
                 type="text"
                 value={formData.name}
@@ -154,7 +154,7 @@ function Users() {
             </div>
             <div>
               <label className="block text-gray-700 mb-2">
-                Mật khẩu {editingUser && '(Để trống nếu không đổi)'}
+                Password {editingUser && '(Leave blank if not changing)'}
               </label>
               <input
                 type="password"
@@ -187,7 +187,7 @@ function Users() {
                 type="submit"
                 className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
               >
-                {editingUser ? 'Cập nhật' : 'Tạo mới'}
+                {editingUser ? 'Update' : 'Create'}
               </button>
               <button
                 type="button"
@@ -197,7 +197,7 @@ function Users() {
                 }}
                 className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
               >
-                Hủy
+                Cancel
               </button>
             </div>
           </form>
@@ -221,10 +221,10 @@ function Users() {
                 State
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Ngày tạo
+                Created Date
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Thao tác
+                Actions
               </th>
             </tr>
           </thead>
@@ -253,13 +253,13 @@ function Users() {
                     onClick={() => handleEdit(user)}
                     className="text-blue-600 hover:text-blue-800 mr-4"
                   >
-                    Sửa
+                    Edit
                   </button>
                   <button
                     onClick={() => handleDelete(user.id)}
                     className="text-red-600 hover:text-red-800"
                   >
-                    Xóa
+                    Delete
                   </button>
                 </td>
               </tr>
@@ -268,7 +268,7 @@ function Users() {
         </table>
         {users.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            Không có user nào
+            No users found
           </div>
         )}
       </div>

@@ -66,7 +66,7 @@ export function AuthProvider({ children }) {
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.message || 'Login failed'
+        error: error.response?.data?.error?.message || error.response?.data?.message || 'Login failed'
       }
     }
   }

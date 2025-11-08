@@ -20,7 +20,7 @@ function Login() {
     if (result.success) {
       navigate('/')
     } else {
-      showError(result.error || 'Đăng nhập thất bại')
+      showError(result.error || 'Login failed')
     }
 
     setLoading(false)
@@ -29,10 +29,10 @@ function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Đăng nhập</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-gray-700 mb-2">Tên đăng nhập</label>
+            <label className="block text-gray-700 mb-2">Username</label>
             <input
               type="text"
               value={username}
@@ -42,7 +42,7 @@ function Login() {
             />
           </div>
           <div>
-            <label className="block text-gray-700 mb-2">Mật khẩu</label>
+            <label className="block text-gray-700 mb-2">Password</label>
             <input
               type="password"
               value={password}
@@ -56,7 +56,7 @@ function Login() {
             disabled={loading}
             className="w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:opacity-50"
           >
-            {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
       </div>

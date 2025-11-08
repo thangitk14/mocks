@@ -9,12 +9,12 @@ function Header() {
       <div className="flex items-center gap-4">
         {user && (
           <>
-            <span className="text-gray-600">Xin chào, {user.name || user.username}</span>
+            <span className="text-gray-600">Hello, {user?.user?.name || user?.user?.username}</span>
             <button
               onClick={logout}
               className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
             >
-              Đăng xuất
+              Logout
             </button>
           </>
         )}

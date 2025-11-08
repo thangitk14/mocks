@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
-function LeftNavigator() {
+function LeftNavigator({ onToggle }) {
   const { hasPermission } = useAuth()
 
   const navItems = [
@@ -32,8 +32,17 @@ function LeftNavigator() {
   )
 
   return (
-    <nav className="w-64 bg-gray-800 text-white min-h-screen p-4">
-      <h2 className="text-xl font-bold mb-6">Navigation</h2>
+    <nav className="w-64 bg-gray-800 text-white min-h-screen p-4 relative">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold">Navigation</h2>
+        <button
+          onClick={onToggle}
+          className="text-gray-300 hover:text-white hover:bg-gray-700 px-2 py-1 rounded transition"
+          aria-label="Hide Navigation"
+        >
+          ◀
+        </button>
+      </div>
       <ul className="space-y-2">
         {visibleItems.map((item) => (
           <li key={item.path}>
