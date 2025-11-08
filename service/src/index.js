@@ -1,4 +1,6 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const config = require('./config/config');
 require('./config/database'); // Initialize database connection
@@ -16,6 +18,18 @@ const errorHandler = require('./middleware/errorHandler');
 
 // Create Express app
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = new Server(server, {
+  cors: {
+    origin: true, // Allow all origins
+    credentials: true
+  }
+});
+
+// Make io available globally
+global.io = io;
 
 // Middleware
 app.use(cors({
@@ -56,11 +70,40 @@ app.use((req, res) => {
 // Error handling middleware (must be last)
 app.use(errorHandler);
 
-// Start server
-const PORT = config.port;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Environment: ${config.nodeEnv}`);
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+
+  // Handle joining a domain room for real-time updates
+  socket.on('join-domain', (domainId) => {
+    const roomName = `domain-${domainId}`;
+    socket.join(roomName);
+    console.log(`[Socket] Client ${socket.id} joined ${roomName}`);
+    
+    // Log room info
+    const room = io.sockets.adapter.rooms.get(roomName);
+    const clientCount = room ? room.size : 0;
+    console.log(`[Socket] Room ${roomName} now has ${clientCount} client(s)`);
+  });
+
+  // Handle leaving a domain room
+  socket.on('leave-domain', (domainId) => {
+    const roomName = `domain-${domainId}`;
+    socket.leave(roomName);
+    console.log(`[Socket] Client ${socket.id} left ${roomName}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
 });
 
-module.exports = app;
+// Start server
+const PORT = config.port;
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+  console.log(`Environment: ${config.nodeEnv}`);
+  console.log(`Socket.IO server initialized`);
+});
+
+module.exports = { app, server, io };

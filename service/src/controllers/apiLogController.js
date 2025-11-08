@@ -97,6 +97,37 @@ const createApiLog = async (req, res, next) => {
       responseBody: responseBody || null
     });
 
+    // Get the full log data to emit via socket
+    const log = await ApiLog.findById(logId);
+
+    // Emit real-time event to clients listening to this domain
+    if (global.io && log) {
+      const roomName = `domain-${domain_id}`;
+      const room = global.io.sockets.adapter.rooms.get(roomName);
+      const clientCount = room ? room.size : 0;
+      
+      console.log(`[Socket] Emitting new-api-log event for ${roomName}, clients in room: ${clientCount}`);
+      console.log(`[Socket] Log data:`, {
+        id: log.id,
+        domain_id: log.domain_id,
+        method: log.method,
+        status: log.status
+      });
+      
+      global.io.to(roomName).emit('new-api-log', {
+        log: log
+      });
+      
+      console.log(`[Socket] Event emitted successfully`);
+    } else {
+      if (!global.io) {
+        console.warn('[Socket] global.io is not available');
+      }
+      if (!log) {
+        console.warn('[Socket] Log data is not available');
+      }
+    }
+
     res.status(201).json({
       success: true,
       data: {

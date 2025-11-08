@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { apiLogService } from '../services/apiLogService'
 import { mappingDomainService } from '../services/mappingDomainService'
 import { useError } from '../contexts/ErrorContext'
+import { connectSocket, disconnectSocket, joinDomainRoom, leaveDomainRoom, getSocket } from '../services/socketService'
 
 function ApiLogs() {
   const { domainId } = useParams()
@@ -19,6 +20,61 @@ function ApiLogs() {
   useEffect(() => {
     fetchDomain()
     fetchLogs()
+
+    // Connect to socket and join domain room
+    const socket = connectSocket()
+    
+    // Listen for new API logs
+    const handleNewLog = (data) => {
+      console.log('[ApiLogs] Received new-api-log event:', data)
+      if (data.log) {
+        const logDomainId = parseInt(data.log.domain_id)
+        const currentDomainId = parseInt(domainId)
+        console.log(`[ApiLogs] Comparing domain_id: ${logDomainId} === ${currentDomainId}`)
+        
+        if (logDomainId === currentDomainId) {
+          console.log('[ApiLogs] Adding new log to list:', data.log.id)
+          // Add new log to the beginning of the list
+          setLogs(prevLogs => {
+            // Check if log already exists to avoid duplicates
+            const exists = prevLogs.some(log => log.id === data.log.id)
+            if (exists) {
+              console.log('[ApiLogs] Log already exists, skipping:', data.log.id)
+              return prevLogs
+            }
+            // Add new log at the beginning and limit to 100 items
+            const newLogs = [data.log, ...prevLogs].slice(0, 100)
+            console.log('[ApiLogs] Updated logs list, new count:', newLogs.length)
+            return newLogs
+          })
+        } else {
+          console.log(`[ApiLogs] Domain ID mismatch, ignoring log`)
+        }
+      } else {
+        console.warn('[ApiLogs] Received event without log data')
+      }
+    }
+
+    socket.on('new-api-log', handleNewLog)
+    
+    // Join domain room after socket is ready
+    const handleConnect = () => {
+      console.log('[ApiLogs] Socket connected, joining domain room:', domainId)
+      joinDomainRoom(domainId)
+    }
+    
+    if (socket.connected) {
+      joinDomainRoom(domainId)
+    } else {
+      socket.once('connect', handleConnect)
+    }
+
+    // Cleanup on unmount
+    return () => {
+      socket.off('new-api-log', handleNewLog)
+      socket.off('connect', handleConnect)
+      leaveDomainRoom(domainId)
+    }
   }, [domainId])
 
   const fetchDomain = async () => {
