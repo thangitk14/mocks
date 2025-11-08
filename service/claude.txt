@@ -1,0 +1,11 @@
+Tổng quan Service hệ thống.
+ - Server nodejs 20+, có thể chạy bằng nodemon để develop, có file mt .env.developer và .env.production
+ - DB mysql root/Test@123 
+ - Sử dụng express.
+ - Có các api login, register, authen, authorization cơ bản.
+ - Các model (Nếu có sai chính tả tự sửa): 
+  + User: Dùng cho việc quản lý User cơ bản các field (id, tên, username, password, created_by, updated_by, role_user_id).
+  + Role: Quản lý các quyền (id, code, name, path). path này dùng cho việc phân quyền ở api theo chức năng. VD: các chức năng quản lý config sẽ thông qua path /config/*. Các user có permission này mới được thực hiện các api /config/change,new, ... 
+  + RoleUser: (id, user_id, role_id), xử lý quan hệ n-n của role và user
+
+ - Các API có định nghĩa lỗi error code rõ ràng chuyên nghiệp.
