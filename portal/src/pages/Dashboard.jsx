@@ -41,7 +41,7 @@ function Dashboard() {
   }, {})
 
   const handleDomainClick = (domainId) => {
-    navigate(`/mapping-domain/${domainId}/logs`)
+    navigate(`/mapping-domain/${domainId}/logs`, { state: { from: 'dashboard' } })
   }
 
   const getStateColor = (state) => {
@@ -59,34 +59,6 @@ function Dashboard() {
       <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-gray-800 dark:text-white">Dashboard</h2>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        {/* User Information */}
-        <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow">
-          <div className="mb-4 md:mb-6">
-            <h3 className="text-base md:text-lg font-semibold mb-2 text-gray-800 dark:text-white">User information</h3>
-            <div className="space-y-2 text-gray-700 dark:text-gray-300 text-sm md:text-base">
-              <p><span className="font-medium">Name:</span> {profile?.name || 'N/A'}</p>
-              <p><span className="font-medium">Username:</span> {profile?.username || 'N/A'}</p>
-              <p><span className="font-medium">ID:</span> {profile?.id || 'N/A'}</p>
-            </div>
-          </div>
-          
-          {user?.roles && user.roles.length > 0 && (
-            <div>
-              <h3 className="text-base md:text-lg font-semibold mb-2 text-gray-800 dark:text-white">Your roles</h3>
-              <div className="flex flex-wrap gap-2">
-                {user.roles.map((role) => (
-                  <span
-                    key={role.id}
-                    className="px-2 md:px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs md:text-sm"
-                  >
-                    {role.name} ({role.code})
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Mapping Domains */}
         <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow">
           <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-800 dark:text-white">Mapping Domains</h3>
@@ -141,6 +113,34 @@ function Dashboard() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* User Information */}
+        <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow">
+          <div className="mb-4 md:mb-6">
+            <h3 className="text-base md:text-lg font-semibold mb-2 text-gray-800 dark:text-white">User information</h3>
+            <div className="space-y-2 text-gray-700 dark:text-gray-300 text-sm md:text-base">
+              <p><span className="font-medium">Name:</span> {profile?.name || 'N/A'}</p>
+              <p><span className="font-medium">Username:</span> {profile?.username || 'N/A'}</p>
+              <p><span className="font-medium">ID:</span> {profile?.id || 'N/A'}</p>
+            </div>
+          </div>
+          
+          {user?.roles && user.roles.length > 0 && (
+            <div>
+              <h3 className="text-base md:text-lg font-semibold mb-2 text-gray-800 dark:text-white">Your roles</h3>
+              <div className="flex flex-wrap gap-2">
+                {user.roles.map((role) => (
+                  <span
+                    key={role.id}
+                    className="px-2 md:px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs md:text-sm"
+                  >
+                    {role.name} ({role.code})
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>

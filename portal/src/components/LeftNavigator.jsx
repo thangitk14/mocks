@@ -62,6 +62,7 @@ function LeftNavigator({ onToggle }) {
           <li key={item.path}>
             <NavLink
               to={item.path}
+              end={item.path === '/mapping-domain'} // Only exact match for mapping-domain
               onClick={(e) => {
                 // Only close navigation on mobile (when window width < 768px)
                 if (window.innerWidth < 768) {

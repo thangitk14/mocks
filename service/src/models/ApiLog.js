@@ -1,9 +1,9 @@
 const db = require('../config/database');
 
 class ApiLog {
-  static async create({ domain_id, headers, body, query, method, status, toCUrl, responseHeaders, responseBody }) {
+  static async create({ domain_id, headers, body, query, method, status, toCUrl, responseHeaders, responseBody, duration }) {
     const [result] = await db.execute(
-      'INSERT INTO api_logs (domain_id, headers, body, query, method, status, toCUrl, response_headers, response_body) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO api_logs (domain_id, headers, body, query, method, status, toCUrl, response_headers, response_body, duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         domain_id,
         JSON.stringify(headers || {}),
@@ -13,7 +13,8 @@ class ApiLog {
         status,
         toCUrl,
         JSON.stringify(responseHeaders || {}),
-        JSON.stringify(responseBody || null)
+        JSON.stringify(responseBody || null),
+        duration || null
       ]
     );
     return result.insertId;

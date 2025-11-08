@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS api_logs (
   toCUrl TEXT,
   response_headers TEXT,
   response_body TEXT,
+  duration INT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (domain_id) REFERENCES mapping_domains(id) ON DELETE CASCADE,
   INDEX idx_domain_id (domain_id),

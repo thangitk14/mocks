@@ -3,6 +3,8 @@ const { getMappingDomainByPath } = require('../config/configLoader');
 const { generateCurl } = require('../utils/curlGenerator');
 
 const forwardRequest = async (req, res, next) => {
+  const startTime = Date.now(); // Record start time at the beginning
+  
   try {
     const path = req.path;
     const domain = getMappingDomainByPath(path);
@@ -75,13 +77,17 @@ const forwardRequest = async (req, res, next) => {
     // Forward the request
     const response = await axios(requestOptions);
 
+    // Calculate duration in milliseconds
+    const duration = Date.now() - startTime;
+
     // Store request info for logging
     req.forwardInfo = {
       domain,
       forwardUrl,
       responseStatus: response.status,
       responseData: response.data,
-      responseHeaders: response.headers || {}
+      responseHeaders: response.headers || {},
+      duration
     };
 
     // Call logRequest directly (fire and forget - don't await)
@@ -112,10 +118,14 @@ const forwardRequest = async (req, res, next) => {
   } catch (error) {
     console.error('Forward error:', error.message);
     
+    // Calculate duration even on error
+    const duration = Date.now() - startTime;
+    
     // Store error info for logging
     req.forwardInfo = {
       error: error.message,
-      responseStatus: 500
+      responseStatus: 500,
+      duration
     };
 
     // Call logRequest directly (fire and forget - don't await)
@@ -170,7 +180,8 @@ const logRequest = async (req, res, next) => {
       status: req.forwardInfo?.responseStatus || res.statusCode || 500,
       toCUrl: curlCommand,
       responseHeaders: req.forwardInfo?.responseHeaders || {},
-      responseBody: req.forwardInfo?.responseData || null
+      responseBody: req.forwardInfo?.responseData || null,
+      duration: req.forwardInfo?.duration || null
     };
 
     // Send log to service (fire and forget)

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { apiLogService } from '../services/apiLogService'
 import { mappingDomainService } from '../services/mappingDomainService'
 import { useError } from '../contexts/ErrorContext'
@@ -8,6 +8,7 @@ import { connectSocket, disconnectSocket, joinDomainRoom, leaveDomainRoom, getSo
 function ApiLogs() {
   const { domainId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const [logs, setLogs] = useState([])
   const [domain, setDomain] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -15,16 +16,50 @@ function ApiLogs() {
   const [selectedLog, setSelectedLog] = useState(null)
   const [showResponseHeaders, setShowResponseHeaders] = useState(false)
   const [showResponseBody, setShowResponseBody] = useState(true)
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(20)
+  const [total, setTotal] = useState(0)
   const { showError } = useError()
+
+  const fetchDomain = async () => {
+    try {
+      const response = await mappingDomainService.getById(domainId)
+      setDomain(response.data?.mappingDomain)
+    } catch (error) {
+      showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to load domain')
+    }
+  }
+
+  const fetchLogs = async () => {
+    try {
+      setLoading(true)
+      const offset = (page - 1) * limit
+      const response = await apiLogService.getByDomainId(domainId, { limit, offset })
+      const logsData = response.data?.logs || []
+      setLogs(Array.isArray(logsData) ? logsData : [])
+      setTotal(response.data?.total || 0)
+    } catch (error) {
+      showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to load API logs')
+      setLogs([])
+      setTotal(0)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     fetchDomain()
-    fetchLogs()
+  }, [domainId])
 
+  useEffect(() => {
+    fetchLogs()
+  }, [domainId, page, limit])
+
+  useEffect(() => {
     // Connect to socket and join domain room
     const socket = connectSocket()
     
-    // Listen for new API logs
+    // Listen for new API logs - only add if on page 1
     const handleNewLog = (data) => {
       console.log('[ApiLogs] Received new-api-log event:', data)
       if (data.log) {
@@ -33,20 +68,29 @@ function ApiLogs() {
         console.log(`[ApiLogs] Comparing domain_id: ${logDomainId} === ${currentDomainId}`)
         
         if (logDomainId === currentDomainId) {
-          console.log('[ApiLogs] Adding new log to list:', data.log.id)
-          // Add new log to the beginning of the list
-          setLogs(prevLogs => {
-            // Check if log already exists to avoid duplicates
-            const exists = prevLogs.some(log => log.id === data.log.id)
-            if (exists) {
-              console.log('[ApiLogs] Log already exists, skipping:', data.log.id)
-              return prevLogs
-            }
-            // Add new log at the beginning and limit to 100 items
-            const newLogs = [data.log, ...prevLogs].slice(0, 100)
-            console.log('[ApiLogs] Updated logs list, new count:', newLogs.length)
-            return newLogs
-          })
+          // Only add new log if we're on page 1
+          if (page === 1) {
+            console.log('[ApiLogs] Adding new log to list:', data.log.id)
+            // Add new log to the beginning of the list
+            setLogs(prevLogs => {
+              // Check if log already exists to avoid duplicates
+              const exists = prevLogs.some(log => log.id === data.log.id)
+              if (exists) {
+                console.log('[ApiLogs] Log already exists, skipping:', data.log.id)
+                return prevLogs
+              }
+              // Add new log at the beginning and limit to current limit
+              const newLogs = [data.log, ...prevLogs].slice(0, limit)
+              console.log('[ApiLogs] Updated logs list, new count:', newLogs.length)
+              // Update total count
+              setTotal(prevTotal => prevTotal + 1)
+              return newLogs
+            })
+          } else {
+            console.log('[ApiLogs] Not on page 1, updating total count only')
+            // Just update total count if not on page 1
+            setTotal(prevTotal => prevTotal + 1)
+          }
         } else {
           console.log(`[ApiLogs] Domain ID mismatch, ignoring log`)
         }
@@ -75,30 +119,21 @@ function ApiLogs() {
       socket.off('connect', handleConnect)
       leaveDomainRoom(domainId)
     }
-  }, [domainId])
+  }, [domainId, page, limit])
 
-  const fetchDomain = async () => {
-    try {
-      const response = await mappingDomainService.getById(domainId)
-      setDomain(response.data?.mappingDomain)
-    } catch (error) {
-      showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to load domain')
-    }
+  const handleLimitChange = (e) => {
+    const newLimit = parseInt(e.target.value)
+    setLimit(newLimit)
+    setPage(1) // Reset to page 1 when changing limit
   }
 
-  const fetchLogs = async () => {
-    try {
-      setLoading(true)
-      const response = await apiLogService.getByDomainId(domainId, { limit: 100 })
-      const logsData = response.data?.logs || []
-      setLogs(Array.isArray(logsData) ? logsData : [])
-    } catch (error) {
-      showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to load API logs')
-      setLogs([])
-    } finally {
-      setLoading(false)
-    }
+  const handlePageChange = (newPage) => {
+    setPage(newPage)
+    // Scroll to top when changing page
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
+
+  const totalPages = Math.ceil(total / limit)
 
   const handleCopyCurl = async () => {
     if (selectedCurl) {
@@ -258,11 +293,21 @@ function ApiLogs() {
     return <div className="text-center py-8">Loading...</div>
   }
 
+  // Determine back destination based on where user came from
+  const handleBack = () => {
+    const from = location.state?.from
+    if (from === 'dashboard') {
+      navigate('/dashboard')
+    } else {
+      navigate('/mapping-domain')
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center gap-4 mb-6">
         <button
-          onClick={() => navigate('/mapping-domain')}
+          onClick={handleBack}
           className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
         >
           ← Back
@@ -272,36 +317,64 @@ function ApiLogs() {
         </h2>
       </div>
 
+      {/* Pagination Controls - Top */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-700 dark:text-gray-300">Items per page:</label>
+          <select
+            value={limit}
+            onChange={handleLimitChange}
+            className="px-3 py-1.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          Showing {logs.length > 0 ? (page - 1) * limit + 1 : 0} to {Math.min(page * limit, total)} of {total} logs
+        </div>
+      </div>
+
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px]">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ID</th>
-                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Method</th>
-                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Forward Path</th>
-                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
-                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase hidden md:table-cell">Created At</th>
-                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
+                <th className="px-3 md:px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ID</th>
+                <th className="px-3 md:px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Method</th>
+                <th className="px-3 md:px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Forward Path</th>
+                <th className="px-3 md:px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
+                <th className="px-3 md:px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Duration</th>
+                <th className="px-3 md:px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase hidden md:table-cell">Created At</th>
+                <th className="px-3 md:px-6 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
               {logs.map((log) => (
                 <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-3 md:px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{log.id}</td>
-                  <td className="px-3 md:px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs font-medium">
+                  <td className="px-3 md:px-6 py-2 whitespace-nowrap text-gray-900 dark:text-white text-sm">{log.id}</td>
+                  <td className="px-3 md:px-6 py-2 whitespace-nowrap">
+                    <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs font-medium">
                       {log.method}
                     </span>
                   </td>
-                  <td className="px-3 md:px-6 py-4">
-                    <div className="max-w-md truncate text-xs md:text-sm text-gray-700 dark:text-gray-300" title={getForwardPath(log.toCUrl)}>
+                  <td 
+                    className="px-3 md:px-6 py-2 cursor-pointer"
+                    onClick={() => {
+                      setSelectedLog(log)
+                      setShowResponseHeaders(false)
+                      setShowResponseBody(true)
+                    }}
+                  >
+                    <div className="max-w-md truncate text-xs md:text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title={getForwardPath(log.toCUrl)}>
                       {getForwardPath(log.toCUrl)}
                     </div>
                   </td>
-                  <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 md:px-6 py-2 whitespace-nowrap">
                     {log.status && (
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                         log.status >= 200 && log.status < 300 
                           ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
                           : log.status >= 300 && log.status < 400
@@ -314,26 +387,48 @@ function ApiLogs() {
                       </span>
                     )}
                   </td>
-                  <td className="px-3 md:px-6 py-4 whitespace-nowrap hidden md:table-cell text-gray-900 dark:text-white">
+                  <td className="px-3 md:px-6 py-2 whitespace-nowrap text-gray-900 dark:text-white text-sm">
+                    {log.duration !== null && log.duration !== undefined ? (
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        log.duration < 500
+                          ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                          : log.duration < 1000
+                          ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
+                          : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                      }`}>
+                        {log.duration < 1000 ? `${log.duration}ms` : `${(log.duration / 1000).toFixed(2)}s`}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 dark:text-gray-500 text-xs">N/A</span>
+                    )}
+                  </td>
+                  <td className="px-3 md:px-6 py-2 whitespace-nowrap hidden md:table-cell text-gray-900 dark:text-white text-sm">
                     {log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A'}
                   </td>
-                  <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                  <td 
+                    className="px-3 md:px-6 py-2 whitespace-nowrap"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex gap-2 items-center">
                       {log.toCUrl && (
                         <button
-                          onClick={() => setSelectedCurl(log.toCUrl)}
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm md:text-base"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedCurl(log.toCUrl)
+                          }}
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs md:text-sm"
                         >
                           View cURL
                         </button>
                       )}
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation()
                           setSelectedLog(log)
                           setShowResponseHeaders(false) // Reset collapse state when opening new log
                           setShowResponseBody(true) // Default open for body
                         }}
-                        className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 text-sm md:text-base"
+                        className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 text-xs md:text-sm"
                       >
                         Show
                       </button>
@@ -349,36 +444,112 @@ function ApiLogs() {
         )}
       </div>
 
+      {/* Pagination Controls - Bottom */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Page {page} of {totalPages}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(1)}
+              disabled={page === 1}
+              className="px-3 py-1.5 text-sm border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              First
+            </button>
+            <button
+              onClick={() => handlePageChange(page - 1)}
+              disabled={page === 1}
+              className="px-3 py-1.5 text-sm border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              Previous
+            </button>
+            
+            {/* Page Numbers */}
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum
+                if (totalPages <= 5) {
+                  pageNum = i + 1
+                } else if (page <= 3) {
+                  pageNum = i + 1
+                } else if (page >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i
+                } else {
+                  pageNum = page - 2 + i
+                }
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`px-3 py-1.5 text-sm border dark:border-gray-600 rounded transition ${
+                      page === pageNum
+                        ? 'bg-blue-500 dark:bg-blue-600 text-white border-blue-500 dark:border-blue-600'
+                        : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              })}
+            </div>
+            
+            <button
+              onClick={() => handlePageChange(page + 1)}
+              disabled={page === totalPages}
+              className="px-3 py-1.5 text-sm border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              Next
+            </button>
+            <button
+              onClick={() => handlePageChange(totalPages)}
+              disabled={page === totalPages}
+              className="px-3 py-1.5 text-sm border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              Last
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* cURL Dialog */}
       {selectedCurl && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedCurl(null)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6 border-b dark:border-gray-700">
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold text-gray-800 dark:text-white">cURL Command</h3>
                 <button
                   onClick={() => setSelectedCurl(null)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl transition"
                 >
                   ×
                 </button>
               </div>
             </div>
             <div className="p-6 overflow-auto flex-1">
-              <pre className="bg-gray-100 p-4 rounded text-sm overflow-x-auto whitespace-pre-wrap break-words">
+              <pre className="bg-gray-100 dark:bg-gray-900 p-4 rounded text-sm overflow-x-auto whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100">
                 {selectedCurl}
               </pre>
             </div>
-            <div className="p-6 border-t flex justify-end gap-2">
+            <div className="p-6 border-t dark:border-gray-700 flex justify-end gap-2">
               <button
                 onClick={() => setSelectedCurl(null)}
-                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
+                className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded hover:bg-gray-600 dark:hover:bg-gray-700 transition"
               >
                 Close
               </button>
               <button
                 onClick={handleCopyCurl}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-700 transition"
               >
                 Copy
               </button>
@@ -389,21 +560,35 @@ function ApiLogs() {
 
       {/* Response Dialog */}
       {selectedLog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedLog(null)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6 border-b dark:border-gray-700">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   <h3 className="text-xl font-bold text-gray-800 dark:text-white">Response Details</h3>
                   {selectedLog.status && (
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedLog.status)}`}>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedLog.status >= 200 && selectedLog.status < 300 
+                        ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                        : selectedLog.status >= 300 && selectedLog.status < 400
+                        ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
+                        : selectedLog.status >= 400
+                        ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                        : 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200'
+                    }`}>
                       {selectedLog.status}
                     </span>
                   )}
                 </div>
                 <button
                   onClick={() => setSelectedLog(null)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl transition"
                 >
                   ×
                 </button>
@@ -415,7 +600,7 @@ function ApiLogs() {
                 <div>
                   <button
                     onClick={() => setShowResponseHeaders(!showResponseHeaders)}
-                    className="flex items-center justify-between w-full text-left mb-2"
+                    className="flex items-center justify-between w-full text-left mb-2 text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition"
                   >
                     <h4 className="text-lg font-semibold">Response Headers</h4>
                     <svg
@@ -428,7 +613,7 @@ function ApiLogs() {
                     </svg>
                   </button>
                   {showResponseHeaders && (
-                    <pre className="bg-gray-100 p-4 rounded overflow-x-auto whitespace-pre-wrap break-words" style={{ fontSize: '0.6rem' }}>
+                    <pre className="bg-gray-100 dark:bg-gray-900 p-4 rounded overflow-x-auto whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100" style={{ fontSize: '0.6rem' }}>
                       {JSON.stringify(selectedLog.responseHeaders || {}, null, 2)}
                     </pre>
                   )}
@@ -437,7 +622,7 @@ function ApiLogs() {
                 <div>
                   <button
                     onClick={() => setShowResponseBody(!showResponseBody)}
-                    className="flex items-center justify-between w-full text-left mb-2"
+                    className="flex items-center justify-between w-full text-left mb-2 text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition"
                   >
                     <h4 className="text-lg font-semibold">Response Body</h4>
                     <svg
@@ -450,7 +635,7 @@ function ApiLogs() {
                     </svg>
                   </button>
                   {showResponseBody && (
-                    <pre className="bg-gray-100 p-4 rounded overflow-x-auto whitespace-pre-wrap break-words" style={{ fontSize: '0.6rem' }}>
+                    <pre className="bg-gray-100 dark:bg-gray-900 p-4 rounded overflow-x-auto whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100" style={{ fontSize: '0.6rem' }}>
                       {selectedLog.responseBody 
                         ? (typeof selectedLog.responseBody === 'string' 
                             ? selectedLog.responseBody 
@@ -461,10 +646,10 @@ function ApiLogs() {
                 </div>
               </div>
             </div>
-            <div className="p-6 border-t flex justify-end gap-2">
+            <div className="p-6 border-t dark:border-gray-700 flex justify-end gap-2">
               <button
                 onClick={() => setSelectedLog(null)}
-                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
+                className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded hover:bg-gray-600 dark:hover:bg-gray-700 transition"
               >
                 Close
               </button>
