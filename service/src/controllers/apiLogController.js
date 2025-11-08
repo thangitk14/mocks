@@ -75,7 +75,7 @@ const getApiLogsByDomain = async (req, res, next) => {
 const createApiLog = async (req, res, next) => {
   console.log('createApiLog');
   try {
-    const { domain_id, headers, body, query, method, status, toCUrl } = req.body;
+    const { domain_id, headers, body, query, method, status, toCUrl, responseHeaders, responseBody } = req.body;
 
     if (!domain_id || !method) {
       throw new AppError({
@@ -92,7 +92,9 @@ const createApiLog = async (req, res, next) => {
       query: query || {},
       method,
       status: status || null,
-      toCUrl: toCUrl || ''
+      toCUrl: toCUrl || '',
+      responseHeaders: responseHeaders || {},
+      responseBody: responseBody || null
     });
 
     res.status(201).json({

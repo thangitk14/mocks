@@ -1,9 +1,9 @@
 const db = require('../config/database');
 
 class ApiLog {
-  static async create({ domain_id, headers, body, query, method, status, toCUrl }) {
+  static async create({ domain_id, headers, body, query, method, status, toCUrl, responseHeaders, responseBody }) {
     const [result] = await db.execute(
-      'INSERT INTO api_logs (domain_id, headers, body, query, method, status, toCUrl) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO api_logs (domain_id, headers, body, query, method, status, toCUrl, response_headers, response_body) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         domain_id,
         JSON.stringify(headers || {}),
@@ -11,7 +11,9 @@ class ApiLog {
         JSON.stringify(query || {}),
         method,
         status,
-        toCUrl
+        toCUrl,
+        JSON.stringify(responseHeaders || {}),
+        JSON.stringify(responseBody || null)
       ]
     );
     return result.insertId;
@@ -26,6 +28,8 @@ class ApiLog {
       rows[0].headers = JSON.parse(rows[0].headers || '{}');
       rows[0].body = JSON.parse(rows[0].body || '{}');
       rows[0].query = JSON.parse(rows[0].query || '{}');
+      rows[0].responseHeaders = rows[0].response_headers ? JSON.parse(rows[0].response_headers) : {};
+      rows[0].responseBody = rows[0].response_body ? JSON.parse(rows[0].response_body) : null;
     }
     return rows[0];
   }
@@ -50,7 +54,9 @@ class ApiLog {
       ...row,
       headers: JSON.parse(row.headers || '{}'),
       body: JSON.parse(row.body || '{}'),
-      query: JSON.parse(row.query || '{}')
+      query: JSON.parse(row.query || '{}'),
+      responseHeaders: row.response_headers ? JSON.parse(row.response_headers) : {},
+      responseBody: row.response_body ? JSON.parse(row.response_body) : null
     }));
   }
 
@@ -68,7 +74,9 @@ class ApiLog {
       ...row,
       headers: JSON.parse(row.headers || '{}'),
       body: JSON.parse(row.body || '{}'),
-      query: JSON.parse(row.query || '{}')
+      query: JSON.parse(row.query || '{}'),
+      responseHeaders: row.response_headers ? JSON.parse(row.response_headers) : {},
+      responseBody: row.response_body ? JSON.parse(row.response_body) : null
     }));
   }
 

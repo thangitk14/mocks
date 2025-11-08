@@ -11,6 +11,9 @@ function ApiLogs() {
   const [domain, setDomain] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedCurl, setSelectedCurl] = useState(null)
+  const [selectedLog, setSelectedLog] = useState(null)
+  const [showResponseHeaders, setShowResponseHeaders] = useState(false)
+  const [showResponseBody, setShowResponseBody] = useState(true)
   const { showError } = useError()
 
   useEffect(() => {
@@ -251,14 +254,26 @@ function ApiLogs() {
                     {log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A'}
                   </td>
                   <td className="px-3 md:px-6 py-4 whitespace-nowrap">
-                    {log.toCUrl && (
+                    <div className="flex gap-2 items-center">
+                      {log.toCUrl && (
+                        <button
+                          onClick={() => setSelectedCurl(log.toCUrl)}
+                          className="text-blue-600 hover:text-blue-800 text-sm md:text-base"
+                        >
+                          View cURL
+                        </button>
+                      )}
                       <button
-                        onClick={() => setSelectedCurl(log.toCUrl)}
-                        className="text-blue-600 hover:text-blue-800 text-sm md:text-base"
+                        onClick={() => {
+                          setSelectedLog(log)
+                          setShowResponseHeaders(false) // Reset collapse state when opening new log
+                          setShowResponseBody(true) // Default open for body
+                        }}
+                        className="text-green-600 hover:text-green-800 text-sm md:text-base"
                       >
-                        View cURL
+                        Show
                       </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -302,6 +317,92 @@ function ApiLogs() {
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
               >
                 Copy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Response Dialog */}
+      {selectedLog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-bold">Response Details</h3>
+                  {selectedLog.status && (
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedLog.status)}`}>
+                      {selectedLog.status}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => setSelectedLog(null)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            <div className="p-6 overflow-auto flex-1">
+              <div className="space-y-4">
+                {/* Response Headers - Collapsible */}
+                <div>
+                  <button
+                    onClick={() => setShowResponseHeaders(!showResponseHeaders)}
+                    className="flex items-center justify-between w-full text-left mb-2"
+                  >
+                    <h4 className="text-lg font-semibold">Response Headers</h4>
+                    <svg
+                      className={`w-5 h-5 transition-transform ${showResponseHeaders ? 'transform rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {showResponseHeaders && (
+                    <pre className="bg-gray-100 p-4 rounded overflow-x-auto whitespace-pre-wrap break-words" style={{ fontSize: '0.6rem' }}>
+                      {JSON.stringify(selectedLog.responseHeaders || {}, null, 2)}
+                    </pre>
+                  )}
+                </div>
+                {/* Response Body - Collapsible */}
+                <div>
+                  <button
+                    onClick={() => setShowResponseBody(!showResponseBody)}
+                    className="flex items-center justify-between w-full text-left mb-2"
+                  >
+                    <h4 className="text-lg font-semibold">Response Body</h4>
+                    <svg
+                      className={`w-5 h-5 transition-transform ${showResponseBody ? 'transform rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {showResponseBody && (
+                    <pre className="bg-gray-100 p-4 rounded overflow-x-auto whitespace-pre-wrap break-words" style={{ fontSize: '0.6rem' }}>
+                      {selectedLog.responseBody 
+                        ? (typeof selectedLog.responseBody === 'string' 
+                            ? selectedLog.responseBody 
+                            : JSON.stringify(selectedLog.responseBody, null, 2))
+                        : 'No response body'}
+                    </pre>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t flex justify-end gap-2">
+              <button
+                onClick={() => setSelectedLog(null)}
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
+              >
+                Close
               </button>
             </div>
           </div>

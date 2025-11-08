@@ -141,6 +141,8 @@ async function initDatabase() {
         method VARCHAR(10) NOT NULL,
         status INT,
         toCUrl TEXT,
+        response_headers TEXT,
+        response_body TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (domain_id) REFERENCES mapping_domains(id) ON DELETE CASCADE,
         INDEX idx_domain_id (domain_id),
@@ -150,6 +152,33 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
     console.log('API logs table created or already exists');
+
+    // Add response_headers and response_body columns if they don't exist (for existing tables)
+    try {
+      await connection.query(`
+        ALTER TABLE api_logs 
+        ADD COLUMN response_headers TEXT
+      `);
+      console.log('Response headers column added');
+    } catch (error) {
+      // Column might already exist, ignore error
+      if (error.message.includes('Duplicate column name')) {
+        console.log('Response headers column already exists');
+      }
+    }
+    
+    try {
+      await connection.query(`
+        ALTER TABLE api_logs 
+        ADD COLUMN response_body TEXT
+      `);
+      console.log('Response body column added');
+    } catch (error) {
+      // Column might already exist, ignore error
+      if (error.message.includes('Duplicate column name')) {
+        console.log('Response body column already exists');
+      }
+    }
 
     console.log('\nDatabase initialization completed successfully!');
     console.log('\nDefault roles created:');

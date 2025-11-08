@@ -92,6 +92,8 @@ CREATE TABLE IF NOT EXISTS api_logs (
   method VARCHAR(10) NOT NULL,
   status INT,
   toCUrl TEXT,
+  response_headers TEXT,
+  response_body TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (domain_id) REFERENCES mapping_domains(id) ON DELETE CASCADE,
   INDEX idx_domain_id (domain_id),

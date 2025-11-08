@@ -80,7 +80,8 @@ const forwardRequest = async (req, res, next) => {
       domain,
       forwardUrl,
       responseStatus: response.status,
-      responseData: response.data
+      responseData: response.data,
+      responseHeaders: response.headers || {}
     };
 
     // Call logRequest directly (fire and forget - don't await)
@@ -167,7 +168,9 @@ const logRequest = async (req, res, next) => {
       query: req.query || {},
       method: req.method,
       status: req.forwardInfo?.responseStatus || res.statusCode || 500,
-      toCUrl: curlCommand
+      toCUrl: curlCommand,
+      responseHeaders: req.forwardInfo?.responseHeaders || {},
+      responseBody: req.forwardInfo?.responseData || null
     };
 
     // Send log to service (fire and forget)
