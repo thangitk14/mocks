@@ -12,11 +12,10 @@ const getApiBaseURL = () => {
   if (import.meta.env.MODE === 'production') {
     const protocol = window.location.protocol
     const hostname = window.location.hostname
-    const port = window.location.port
     
-    // Portal runs on port 8910, API service runs on port 3000
-    // Always use port 3000 for API service on same host
-    const apiUrl = `${protocol}//${hostname}:3000`
+    // Nginx will proxy /api requests to backend service
+    // Use same domain and protocol (no port needed)
+    const apiUrl = `${protocol}//${hostname}`
     console.log('[API] Production mode - detected API URL:', apiUrl)
     return apiUrl
   }

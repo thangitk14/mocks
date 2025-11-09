@@ -64,31 +64,32 @@ services:
       - mock_service_network
     command: npm start
 
-  # Nginx Reverse Proxy with SSL (Certbot) for Host Forward
-  host_forward_nginx:
+  # Nginx Gateway with SSL (Certbot) - handles both Host Forward and Portal
+  gateway_nginx:
     build:
-      context: ./host_forward/nginx
+      context: ./gateway/nginx
       dockerfile: Dockerfile
-    container_name: mock_host_forward_nginx
+    container_name: mock_gateway_nginx
     restart: unless-stopped
     ports:
       # HTTP and HTTPS ports
-      - "${PUBLIC_HOST_FORWARD_HTTP_PORT:-80}:80"
-      - "${PUBLIC_HOST_FORWARD_HTTPS_PORT:-443}:443"
+      - "${PUBLIC_GATEWAY_HTTP_PORT:-80}:80"
+      - "${PUBLIC_GATEWAY_HTTPS_PORT:-443}:443"
     environment:
-      DOMAIN_NAME: ${HOST_FORWARD_DOMAIN:-fw.thangvnnc.io.vn}
+      HOST_FORWARD_DOMAIN: ${HOST_FORWARD_DOMAIN:-fw.thangvnnc.io.vn}
+      PORTAL_DOMAIN: ${PORTAL_DOMAIN:-tp.thangvnnc.io.vn}
       CERTBOT_EMAIL: ${CERTBOT_EMAIL:-thangvnnc@gmail.com}
       # Default values
-      HOST_FORWARD_DOMAIN: ${HOST_FORWARD_DOMAIN:-fw.thangvnnc.io.vn}
-      PUBLIC_HOST_FORWARD_HTTP_PORT: ${PUBLIC_HOST_FORWARD_HTTP_PORT:-80}
-      PUBLIC_HOST_FORWARD_HTTPS_PORT: ${PUBLIC_HOST_FORWARD_HTTPS_PORT:-443}
+      PUBLIC_GATEWAY_HTTP_PORT: ${PUBLIC_GATEWAY_HTTP_PORT:-80}
+      PUBLIC_GATEWAY_HTTPS_PORT: ${PUBLIC_GATEWAY_HTTPS_PORT:-443}
     volumes:
       # Certificates volume
-      - certbot_data:/etc/letsencrypt
+      - certbot_gateway_data:/etc/letsencrypt
       # ACME challenge directory
-      - certbot_www:/var/www/certbot
+      - certbot_gateway_www:/var/www/certbot
     depends_on:
       - host_forward
+      - portal
     networks:
       - mock_service_network
     command: nginx -g "daemon off;"
@@ -128,9 +129,9 @@ services:
       # Configure VITE_API_BASE_URL in portal/.env.production file
     container_name: mock_portal
     restart: unless-stopped
-    ports:
-      # Bind to 0.0.0.0 to accept connections from all interfaces (public IP)
-      - "${PUBLIC_PORTAL_PORT:-8910}:80"
+    # Remove direct port exposure - nginx will handle it
+    # ports:
+    #   - "${PUBLIC_PORTAL_PORT:-8910}:80"
     environment:
       # Portal build-time environment variables
       # VITE_API_BASE_URL will be set during build from .env.production or docker-compose
@@ -143,9 +144,9 @@ services:
 volumes:
   mock_mysql_data:
     driver: local
-  certbot_data:
+  certbot_gateway_data:
     driver: local
-  certbot_www:
+  certbot_gateway_www:
     driver: local
 
 networks:

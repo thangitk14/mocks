@@ -13,9 +13,9 @@ const getSocketURL = () => {
     const protocol = window.location.protocol
     const hostname = window.location.hostname
     
-    // Portal runs on port 8910, Socket service runs on port 3000
-    // Always use port 3000 for Socket service on same host
-    const socketUrl = `${protocol}//${hostname}:3000`
+    // Nginx will proxy /socket.io requests to backend service
+    // Use same domain and protocol (no port needed)
+    const socketUrl = `${protocol}//${hostname}`
     console.log('[Socket] Production mode - detected Socket URL:', socketUrl)
     return socketUrl
   }
