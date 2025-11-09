@@ -653,8 +653,12 @@ function ApiLogs() {
                           handleMockClick(log)
                         }}
                         className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                          mockResponses[log.id] && mockResponses[log.id].state === 'Active'
-                            ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
+                          mockResponses[log.id]
+                            ? mockResponses[log.id].state === 'Active'
+                              ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
+                              : mockResponses[log.id].state === 'Disable'
+                              ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-800'
+                              : 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-500'
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
