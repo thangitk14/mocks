@@ -156,14 +156,28 @@ const updateMockResponse = async (req, res, next) => {
       });
     }
 
-    const updated = await MockResponse.update(id, {
-      name,
-      status_code,
-      delay,
-      headers,
-      body,
-      state
-    });
+    // Normalize name: if provided, use it (even if empty string), otherwise keep undefined
+    const updateData = {};
+    if (name !== undefined) {
+      updateData.name = name || ''; // Normalize to empty string if falsy
+    }
+    if (status_code !== undefined) {
+      updateData.status_code = status_code;
+    }
+    if (delay !== undefined) {
+      updateData.delay = delay;
+    }
+    if (headers !== undefined) {
+      updateData.headers = headers;
+    }
+    if (body !== undefined) {
+      updateData.body = body;
+    }
+    if (state !== undefined) {
+      updateData.state = state;
+    }
+
+    const updated = await MockResponse.update(id, updateData);
 
     if (!updated) {
       throw new AppError({

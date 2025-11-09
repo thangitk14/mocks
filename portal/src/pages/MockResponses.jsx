@@ -71,7 +71,7 @@ function MockResponses() {
 
   const handleEdit = (mock) => {
     setFormData({
-      name: mock.name || '', // Use name if exists, otherwise empty string
+      name: mock.name !== null && mock.name !== undefined ? mock.name : '', // Preserve empty string, use empty string for null/undefined
       path: mock.path,
       method: mock.method,
       statusCode: mock.status_code?.toString() || '200',
@@ -283,8 +283,8 @@ function MockResponses() {
                   <tr key={mock.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-2 md:px-3 py-2 whitespace-nowrap text-gray-900 dark:text-white text-sm">{mock.id}</td>
                     <td className="px-2 md:px-3 py-2 text-gray-900 dark:text-white text-sm">
-                      <div className="max-w-md truncate" title={mock.name || mock.path || 'No name'}>
-                        {mock.name || mock.path || 'No name'}
+                      <div className="max-w-md truncate" title={mock.name !== null && mock.name !== undefined && mock.name !== '' ? mock.name : 'No name'}>
+                        {mock.name !== null && mock.name !== undefined && mock.name !== '' ? mock.name : 'No name'}
                       </div>
                     </td>
                     <td className="px-2 md:px-3 py-2 text-gray-900 dark:text-white text-sm">

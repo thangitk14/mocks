@@ -180,13 +180,44 @@ function ApiLogs() {
 
   const handleCopyCurl = async (e) => {
     e?.stopPropagation()
-    if (selectedCurl) {
-      try {
+    e?.preventDefault()
+    
+    if (!selectedCurl) {
+      showError('No cURL command to copy')
+      return
+    }
+
+    try {
+      // Try modern Clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(selectedCurl)
         alert('cURL copied to clipboard!')
-      } catch (error) {
-        showError('Failed to copy to clipboard')
+        return
       }
+
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = selectedCurl
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      
+      try {
+        const successful = document.execCommand('copy')
+        if (successful) {
+          alert('cURL copied to clipboard!')
+        } else {
+          throw new Error('execCommand failed')
+        }
+      } finally {
+        document.body.removeChild(textArea)
+      }
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error)
+      showError('Failed to copy to clipboard. Please copy manually.')
     }
   }
 
