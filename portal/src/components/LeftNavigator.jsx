@@ -67,19 +67,19 @@ function LeftNavigator({ onToggle }) {
   }, [location.pathname, isSettingsActive])
 
   return (
-    <nav className="w-64 md:w-64 bg-gray-800 dark:bg-gray-900 text-white h-full p-4 relative shadow-lg flex flex-col overflow-hidden">
+    <nav className="w-64 md:w-64 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white h-full p-4 relative shadow-lg flex flex-col overflow-hidden">
       <div className="flex justify-between items-center mb-6 flex-shrink-0">
-        <h2 className="text-lg md:text-xl font-bold">Navigation</h2>
+        <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">Navigation</h2>
         <button
           onClick={onToggle}
-          className="md:hidden text-gray-300 hover:text-white hover:bg-gray-700 px-2 py-1 rounded transition"
+          className="md:hidden text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-700 px-2 py-1 rounded transition"
           aria-label="Hide Navigation"
         >
           ×
         </button>
         <button
           onClick={onToggle}
-          className="hidden md:block text-gray-300 hover:text-white hover:bg-gray-700 px-2 py-1 rounded transition"
+          className="hidden md:block text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-700 px-2 py-1 rounded transition"
           aria-label="Hide Navigation"
         >
           ◀
@@ -100,8 +100,8 @@ function LeftNavigator({ onToggle }) {
               className={({ isActive }) =>
                 `block px-4 py-2 rounded transition text-sm md:text-base ${
                   isActive
-                    ? 'bg-blue-600 dark:bg-blue-700 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 dark:hover:bg-gray-800'
+                    ? 'bg-blue-600 dark:bg-blue-700 text-white dark:text-white'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                 }`
               }
             >
@@ -117,8 +117,8 @@ function LeftNavigator({ onToggle }) {
               onClick={() => setSettingsOpen(!settingsOpen)}
               className={`w-full flex items-center justify-between px-4 py-2 rounded transition text-sm md:text-base ${
                 isSettingsActive
-                  ? 'bg-blue-600 dark:bg-blue-700 text-white'
-                  : 'text-gray-300 hover:bg-gray-700 dark:hover:bg-gray-800'
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white dark:text-white'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               <span>Settings</span>
@@ -146,8 +146,8 @@ function LeftNavigator({ onToggle }) {
                       className={({ isActive }) =>
                         `block px-4 py-2 rounded transition text-sm md:text-base ${
                           isActive
-                            ? 'bg-blue-600 dark:bg-blue-700 text-white'
-                            : 'text-gray-300 hover:bg-gray-700 dark:hover:bg-gray-800'
+                            ? 'bg-blue-600 dark:bg-blue-700 text-white dark:text-white'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                         }`
                       }
                     >
@@ -161,10 +161,10 @@ function LeftNavigator({ onToggle }) {
         )}
       </ul>
       {/* Theme Toggle Button at Bottom */}
-      <div className="mt-auto pt-4 border-t border-gray-700 dark:border-gray-600 flex-shrink-0">
+      <div className="mt-auto pt-4 border-t border-gray-300 dark:border-gray-600 flex-shrink-0">
         <button
           onClick={toggleTheme}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded transition text-sm md:text-base text-gray-300 hover:bg-gray-700 dark:hover:bg-gray-800"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded transition text-sm md:text-base text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
           aria-label="Toggle Theme"
         >
           {theme === 'dark' ? (
