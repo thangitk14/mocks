@@ -1,5 +1,9 @@
 version: '3.8'
 
+# Load environment variables from .env file
+# Use .env.developer for development or .env.production for production
+# Example: docker-compose --env-file .env.production up
+
 services:
   # MySQL Database
   mock_mysql:
@@ -30,8 +34,10 @@ services:
     container_name: mock_service_app
     restart: unless-stopped
     ports:
-      # Bind to 0.0.0.0 to accept connections from all interfaces (public IP)
-      - "0.0.0.0:3000:3000"
+      # External:Internal port mapping
+      # Format: "HOST_PORT:CONTAINER_PORT"
+      # Use PUBLIC_API_PORT for external port, SERVICE_PORT for internal port
+      - "${PUBLIC_API_PORT:-3000}:${SERVICE_PORT:-3000}"
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       # Database connection - use Docker service name
@@ -41,11 +47,11 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-Test@123}
       DB_NAME: ${DB_NAME:-service_dev}
       # JWT configuration
-      JWT_SECRET: abcdefgh
+      JWT_SECRET: ${JWT_SECRET:-abcdefgh}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
       # CORS - allow all origins in production (nginx handles security)
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
-      PORT: 3000
+      PORT: ${SERVICE_PORT:-3000}
     depends_on:
       mock_mysql:
         condition: service_healthy
@@ -66,14 +72,14 @@ services:
     container_name: mock_host_forward
     restart: unless-stopped
     ports:
-      # Bind to 0.0.0.0:80 to accept connections from all interfaces (public IP)
-      - "0.0.0.0:80:4000"
+      # Bind to 0.0.0.0 to accept connections from all interfaces (public IP)
+      - "${PUBLIC_HOST_FORWARD_PORT:-80}:${HOST_FORWARD_PORT:-4000}"
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      PORT: 4000
+      PORT: ${HOST_FORWARD_PORT:-4000}
       # Backend API URL - Use Docker internal service name for internal communication
       # Use mock_service:3000 for Docker internal network communication
-      SERVICE_URL: ${SERVICE_URL:-http://mock_service:3000}
+      SERVICE_URL: ${SERVICE_URL:-http://mock_service:${SERVICE_PORT:-3000}}
     depends_on:
       - mock_service
     volumes:
@@ -94,8 +100,12 @@ services:
     container_name: mock_portal
     restart: unless-stopped
     ports:
-      # Bind to 0.0.0.0:8910 to accept connections from all interfaces (public IP)
-      - "0.0.0.0:8910:80"
+      # Bind to 0.0.0.0 to accept connections from all interfaces (public IP)
+      - "${PUBLIC_PORTAL_PORT:-8910}:80"
+    environment:
+      # Portal build-time environment variables
+      # VITE_API_BASE_URL will be set during build from .env.production or docker-compose
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
     depends_on:
       - mock_service
     networks:

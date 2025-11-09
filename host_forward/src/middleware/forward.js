@@ -42,7 +42,15 @@ const forwardRequest = async (req, res, next) => {
     console.log(`[${requestId}]   Calling API to get mapping for: ${firstPathSegment}`);
     
     // Call API to get mapping for first path segment
-    const serviceUrl = process.env.SERVICE_URL || 'http://localhost:3000';
+    // SERVICE_URL must be set in docker-compose.yml
+    const serviceUrl = process.env.SERVICE_URL;
+    if (!serviceUrl) {
+      console.error(`[${requestId}] ERROR: SERVICE_URL is not set!`);
+      return res.status(500).json({
+        success: false,
+        error: { message: 'Service configuration error: SERVICE_URL not set' }
+      });
+    }
     let domain = null;
     
     try {
@@ -434,7 +442,12 @@ const logRequest = async (req, res, next) => {
     };
 
     // Send log to service (fire and forget)
-    const serviceUrl = process.env.SERVICE_URL || 'http://localhost:3000';
+    // SERVICE_URL must be set in docker-compose.yml
+    const serviceUrl = process.env.SERVICE_URL;
+    if (!serviceUrl) {
+      console.error(`[LOG] ERROR: SERVICE_URL is not set! Cannot log request.`);
+      return next();
+    }
     console.log(`[LOG] Sending log to ${serviceUrl}/api/logs for domain_id: ${domainToUse.id}, method: ${req.method}, path: ${req.path}`);
     axios.post(`${serviceUrl}/api/logs`, logData, {
       headers: {

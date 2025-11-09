@@ -512,6 +512,7 @@ function ApiLogs() {
                 <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ID</th>
                 <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Method</th>
                 <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Forward Path</th>
+                <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Mock</th>
                 <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
                 <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Duration</th>
                 <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase hidden md:table-cell">Created At</th>
@@ -528,16 +529,59 @@ function ApiLogs() {
                     </span>
                   </td>
                   <td 
-                    className="px-2 md:px-3 py-2 cursor-pointer"
+                    className="px-2 md:px-3 py-2 cursor-pointer relative"
                     onClick={() => {
                       setSelectedLog(log)
                       setShowResponseHeaders(false)
                       setShowResponseBody(true)
                     }}
                   >
-                    <div className="max-w-md truncate text-xs md:text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title={getForwardPath(log.toCUrl)}>
-                      {getForwardPath(log.toCUrl)}
+                    <div 
+                      className="max-w-[100px] text-xs md:text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors overflow-hidden group relative"
+                      title={getForwardPath(log.toCUrl)}
+                      style={{
+                        direction: 'rtl',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <span 
+                        className="inline-block"
+                        style={{
+                          direction: 'ltr',
+                          maxWidth: '100px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          display: 'inline-block'
+                        }}
+                      >
+                        {getForwardPath(log.toCUrl)}
+                      </span>
+                      <div 
+                        className="absolute left-0 top-full mt-1 hidden group-hover:block z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg p-2 max-w-md whitespace-normal break-words text-xs"
+                        style={{ minWidth: '200px' }}
+                      >
+                        {getForwardPath(log.toCUrl)}
+                      </div>
                     </div>
+                  </td>
+                  <td 
+                    className="px-2 md:px-3 py-2 whitespace-nowrap"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleMockClick(log)
+                      }}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                        mockResponses[log.id]
+                          ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Mock
+                    </button>
                   </td>
                   <td className="px-2 md:px-3 py-2 whitespace-nowrap">
                     {log.status && (
@@ -577,19 +621,6 @@ function ApiLogs() {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex gap-2 items-center">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleMockClick(log)
-                        }}
-                        className={`px-2 py-1 rounded text-xs font-medium transition ${
-                          mockResponses[log.id]
-                            ? 'bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700'
-                            : 'bg-gray-400 dark:bg-gray-600 text-white hover:bg-gray-500 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        Mock
-                      </button>
                       {log.toCUrl && (
                         <button
                           onClick={(e) => {

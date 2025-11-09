@@ -2,12 +2,13 @@
 
 ## TỔNG QUAN PROJECT
 
-Đây là một hệ thống Mock API Gateway với 3 services chính:
-1. **Service** (Backend API) - Quản lý authentication, authorization, mapping domains, và API logs
-2. **Portal** (Frontend) - React admin portal để quản lý users, roles, mapping domains, và xem logs
-3. **Host Forward** (API Gateway) - Service forward requests dựa trên mapping domain configuration
+Đây là một hệ thống Mock API Gateway với 4 services chính:
+1. **MySQL Database** - Lưu trữ users, roles, mapping domains, API logs, mock responses
+2. **Service** (Backend API) - Quản lý authentication, authorization, mapping domains, API logs, và mock responses
+3. **Portal** (Frontend) - React admin portal để quản lý users, roles, mapping domains, mock responses, và xem logs real-time
+4. **Host Forward** (API Gateway) - Service forward requests dựa trên mapping domain configuration, hỗ trợ mock responses
 
-## KIẾN TRÚC HỆ THỐNG
+## KIẾN TRÚC HỆ THỐNG (Docker)
 
 ```
 ┌─────────────┐
@@ -17,8 +18,8 @@
        │ HTTP Request
        ▼
 ┌─────────────────┐
-│  Host Forward    │  Port: 4000
-│  (API Gateway)   │
+│  Host Forward    │  Port: 80 (external) / 4000 (internal)
+│  (API Gateway)   │  Domain: fw.thangvnnc.io.vn
 └──────┬───────────┘
        │
        ├───► Forward to target domain
@@ -27,36 +28,80 @@
                                │
                                ▼
                     ┌──────────────────┐
-                    │     Service      │  Port: 3000
-                    │  (Backend API)   │
+                    │     Service      │  Port: 3000 (public)
+                    │  (Backend API)   │  Domain: fw.thangvnnc.io.vn:3000
                     └────────┬─────────┘
                              │
-                             ├───► MySQL Database
+                             ├───► MySQL Database (Port: 3306)
                              │
                              └───► Socket.IO ──┐
                                                │
                                                ▼
                                     ┌──────────────────┐
-                                    │     Portal       │  Port: 5173
-                                    │  (React Frontend) │
+                                    │     Portal       │  Port: 8910 (external) / 80 (internal)
+                                    │  (React Frontend) │  Domain: fw.thangvnnc.io.vn:8910
                                     └──────────────────┘
 ```
+
+## DOCKER CONFIGURATION
+
+### Services
+
+1. **mock_mysql** - MySQL 8.0 Database
+   - Container: `mock_service_mysql`
+   - Port: `3306:3306`
+   - Volume: `mock_mysql_data`
+   - Auto-initialization: `./service/scripts/init.sql`
+
+2. **mock_service** - Backend API Service
+   - Container: `mock_service_app`
+   - Port: `${PUBLIC_API_PORT:-3000}:${SERVICE_PORT:-3000}`
+   - Environment: Tất cả từ `.env` files hoặc docker-compose.yml
+   - Network: `mock_service_network`
+
+3. **host_forward** - API Gateway
+   - Container: `mock_host_forward`
+   - Port: `${PUBLIC_HOST_FORWARD_PORT:-80}:${HOST_FORWARD_PORT:-4000}`
+   - Environment: `SERVICE_URL=http://mock_service:${SERVICE_PORT:-3000}` (Docker internal)
+   - Network: `mock_service_network`
+
+4. **portal** - React Frontend
+   - Container: `mock_portal`
+   - Port: `${PUBLIC_PORTAL_PORT:-8910}:80`
+   - Build: Multi-stage (Vite build + Nginx serve)
+   - Network: `mock_service_network`
+
+### Environment Configuration
+
+Tất cả cấu hình được quản lý tập trung trong:
+- `.env.example` - Template
+- `.env.developer` - Development environment
+- `.env.production` - Production environment
+- `docker-compose.yml` - Docker configuration với `${VAR:-default}` syntax
+
+**Không có hard code** - Tất cả URLs, ports, credentials từ environment variables.
 
 ## CẤU TRÚC THỰ MỤC
 
 ```
 mocks/
-├── service/                    # Backend API Service
+├── .env.example              # Environment variables template
+├── .env.developer            # Developer environment
+├── .env.production           # Production environment
+├── docker-compose.yml        # Docker orchestration
+├── rebuild-database.sh       # Script to rebuild database
+├── check-production.sh        # Script to verify production config
+│
+├── service/                  # Backend API Service
 │   ├── src/
 │   │   ├── config/
 │   │   │   ├── config.js       # Environment config loader
 │   │   │   └── database.js     # MySQL connection pool
-│   │   ├── constants/
-│   │   │   └── userStates.js   # User state constants
-│   │   ├── controllers/        # Request handlers
+│   │   ├── controllers/
 │   │   │   ├── apiLogController.js
 │   │   │   ├── authController.js
 │   │   │   ├── mappingDomainController.js
+│   │   │   ├── mockResponseController.js  # Mock response management
 │   │   │   ├── roleController.js
 │   │   │   ├── roleUserController.js
 │   │   │   └── userController.js
@@ -65,16 +110,18 @@ mocks/
 │   │   │   ├── authorize.js    # Role-based authorization
 │   │   │   ├── errorHandler.js # Error handling
 │   │   │   └── validate.js     # Request validation
-│   │   ├── models/             # Database models
+│   │   ├── models/
 │   │   │   ├── ApiLog.js
 │   │   │   ├── MappingDomain.js
+│   │   │   ├── MockResponse.js  # Mock response model
 │   │   │   ├── Role.js
 │   │   │   ├── RoleUser.js
 │   │   │   └── User.js
-│   │   ├── routes/             # API routes
+│   │   ├── routes/
 │   │   │   ├── apiLogRoutes.js
 │   │   │   ├── authRoutes.js
 │   │   │   ├── mappingDomainRoutes.js
+│   │   │   ├── mockResponseRoutes.js  # Mock response routes
 │   │   │   ├── roleRoutes.js
 │   │   │   ├── roleUserRoutes.js
 │   │   │   └── userRoutes.js
@@ -84,11 +131,10 @@ mocks/
 │   │   │   └── jwt.js           # JWT utilities
 │   │   └── index.js            # Express server + Socket.IO
 │   ├── scripts/
-│   │   ├── init.sql            # Database schema
-│   │   └── initDatabase.js     # Database initialization
-│   └── package.json
+│   │   └── init.sql            # Complete database initialization (tables + migrations + default data)
+│   └── Dockerfile
 │
-├── portal/                     # React Frontend
+├── portal/                   # React Frontend
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── ConfirmDialog.jsx
@@ -96,41 +142,47 @@ mocks/
 │   │   │   ├── Header.jsx
 │   │   │   └── LeftNavigator.jsx
 │   │   ├── contexts/
-│   │   │   ├── AuthContext.jsx      # Authentication context
-│   │   │   ├── ConfirmContext.jsx   # Confirmation dialog context
-│   │   │   └── ErrorContext.jsx     # Error handling context
+│   │   │   ├── AuthContext.jsx
+│   │   │   ├── ConfirmContext.jsx
+│   │   │   ├── ErrorContext.jsx
+│   │   │   └── ThemeContext.jsx
 │   │   ├── pages/
-│   │   │   ├── ApiLogs.jsx          # API logs viewer (real-time)
+│   │   │   ├── ApiLogs.jsx          # API logs viewer (real-time) + Mock button
 │   │   │   ├── Dashboard.jsx
 │   │   │   ├── Login.jsx
-│   │   │   ├── MainPage.jsx        # Layout wrapper
-│   │   │   ├── MappingDomain.jsx    # Domain mapping management
+│   │   │   ├── MainPage.jsx
+│   │   │   ├── MappingDomain.jsx
+│   │   │   ├── MockResponses.jsx    # Mock response management
 │   │   │   ├── Roles.jsx
 │   │   │   ├── RoleUser.jsx
 │   │   │   └── Users.jsx
 │   │   ├── services/
-│   │   │   ├── api.js               # Axios instance with interceptors
+│   │   │   ├── api.js               # Axios instance - auto-detect API URL
 │   │   │   ├── apiLogService.js
 │   │   │   ├── authService.js
 │   │   │   ├── mappingDomainService.js
+│   │   │   ├── mockResponseService.js
 │   │   │   ├── roleService.js
 │   │   │   ├── roleUserService.js
-│   │   │   ├── socketService.js     # Socket.IO client service
+│   │   │   ├── socketService.js     # Socket.IO client - auto-detect URL
 │   │   │   └── userService.js
-│   │   ├── App.jsx                  # Main app component with routing
-│   │   └── main.jsx                 # React entry point
-│   └── package.json
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── nginx.conf             # Nginx config with API/Socket proxy
+│   ├── Dockerfile             # Multi-stage build (Vite + Nginx)
+│   └── .env.production        # Vite environment variables
 │
-└── host_forward/               # API Gateway Service
+└── host_forward/              # API Gateway Service
     ├── src/
     │   ├── config/
-    │   │   └── configLoader.js      # Load mapping domains from service
+    │   │   └── configLoader.js      # Load mapping domains from API (real-time)
     │   ├── middleware/
-    │   │   └── forward.js           # Request forwarding logic
+    │   │   └── forward.js           # Request forwarding + Mock response check
     │   ├── utils/
     │   │   └── curlGenerator.js     # Generate cURL commands
     │   └── index.js                 # Express server
-    └── package.json
+    ├── Dockerfile
+    └── .env.production        # Environment variables
 ```
 
 ## DATABASE SCHEMA
@@ -168,7 +220,7 @@ mocks/
 #### 4. mapping_domains
 - `id` (INT, PRIMARY KEY, AUTO_INCREMENT)
 - `project_name` (VARCHAR(255))
-- `path` (VARCHAR(255), UNIQUE) - Mapping path, e.g., '/vietbank/*', '/api/test'
+- `path` (VARCHAR(255), UNIQUE) - Mapping path, e.g., '/vietbank', '/vietbank/*'
 - `forward_domain` (VARCHAR(255)) - Target domain to forward to
 - `created_by` (INT)
 - `updated_by` (INT)
@@ -188,7 +240,32 @@ mocks/
 - `toCUrl` (TEXT) - Generated cURL command
 - `response_headers` (TEXT, JSON)
 - `response_body` (TEXT, JSON)
+- `duration` (INT) - Request duration in milliseconds
 - `created_at` (TIMESTAMP)
+
+#### 6. mock_responses
+- `id` (INT, PRIMARY KEY, AUTO_INCREMENT)
+- `domain_id` (INT, FOREIGN KEY -> mapping_domains.id)
+- `name` (VARCHAR(500)) - Mock response name
+- `path` (VARCHAR(500)) - Relative path (without mapping prefix)
+- `method` (VARCHAR(10)) - HTTP method
+- `status_code` (INT) - HTTP status code
+- `delay` (INT) - Response delay in milliseconds
+- `headers` (TEXT, JSON) - Response headers
+- `body` (TEXT, JSON) - Response body
+- `state` (ENUM: 'Active', 'Forward') - Active: return mock, Forward: forward request
+- `created_at` (TIMESTAMP)
+- `updated_at` (TIMESTAMP)
+- UNIQUE KEY (domain_id, path, method)
+
+### Database Initialization
+
+File `service/scripts/init.sql` chứa toàn bộ logic khởi tạo:
+- Tạo tất cả tables với đầy đủ columns
+- Migration tự động: Thêm columns nếu thiếu (duration, response_headers, response_body, name)
+- Insert dữ liệu mặc định (roles, admin user)
+
+**Chạy tự động** khi MySQL container start lần đầu tiên.
 
 ### Default Data
 
@@ -233,11 +310,20 @@ mocks/
 - `DELETE /api/role-user/:id` - Remove role from user (requires auth)
 
 #### Mapping Domains
-- `GET /api/config/mappingDomain` - Get all mapping domains (requires auth)
+- `GET /api/config/mappingDomain` - Get all mapping domains (PUBLIC - for host_forward)
 - `GET /api/config/mappingDomain/:id` - Get mapping domain by ID (requires auth)
 - `POST /api/config/mappingDomain` - Create mapping domain (requires auth)
 - `PUT /api/config/mappingDomain/:id` - Update mapping domain (requires auth)
 - `DELETE /api/config/mappingDomain/:id` - Delete mapping domain (requires auth)
+
+#### Mock Responses
+- `GET /api/mock-responses` - Get all mock responses (requires auth)
+- `GET /api/mock-responses/path` - Get mock response by path (query: domainId, path, method) - PUBLIC
+- `GET /api/mock-responses/:id` - Get mock response by ID (requires auth)
+- `GET /api/mock-responses/domain/:domainId` - Get mock responses by domain (requires auth)
+- `POST /api/mock-responses` - Create mock response (requires auth)
+- `PUT /api/mock-responses/:id` - Update mock response (requires auth)
+- `DELETE /api/mock-responses/:id` - Delete mock response (requires auth)
 
 #### API Logs
 - `GET /api/logs` - Get all logs (optional query: domain_id, limit, offset)
@@ -245,9 +331,128 @@ mocks/
 - `GET /api/logs/domain/:domainId` - Get logs by domain ID (query: limit, offset)
 - `POST /api/logs` - Create log (used by host_forward service)
 
-### Host Forward API (Port 4000)
+### Host Forward API (Port 80/4000)
 - `GET /health` - Health check
+- `GET /debug/mappings` - Debug endpoint to view loaded mappings
 - `ALL /*` - Forward all other requests based on mapping domain configuration
+
+## REQUEST FLOW
+
+### 1. Client Request → Host Forward
+```
+Client → GET /vietbank/api/users → Host Forward (Port 80)
+```
+
+### 2. Host Forward Processing (Step-by-Step Logging)
+
+**STEP 1: Incoming Request**
+- Log: Method, Path, Client IP, Headers, Body, Query
+
+**STEP 2: Finding Mapping Domain**
+- Extract first path segment: `/vietbank` from `/vietbank/api/users`
+- Call API: `GET http://mock_service:3000/api/config/mappingDomain`
+- Find mapping that matches first path segment
+- Log: Domain ID, Project, Path, Forward Domain, Forward State
+
+**STEP 3: Building Forward URL**
+- Remove first path segment from full path
+- Build forward URL: `forward_domain + remaining_path`
+- Log: Original Path, Mapped Path, Forward Path, Forward URL
+
+**STEP 4: Checking Mock Response**
+- Call API: `GET http://mock_service:3000/api/mock-responses/path?domainId=X&path=Y&method=Z`
+- If mock exists and state='Active':
+  - Apply delay if specified
+  - Return mock response (skip forwarding)
+  - Log: Mock ID, Status Code, Delay
+- If no mock or state='Forward':
+  - Continue to forwarding
+
+**STEP 5: Preparing Forward Request**
+- Prepare headers, query params, body
+- Log: Forward URL, Method, Headers, Query, Body
+
+**STEP 6: Forwarding Request**
+- Forward to target domain
+- Log: Status, Forward Duration, Response Headers
+
+**STEP 7: Total Request Duration**
+- Calculate total duration
+- Log: Total Duration
+
+**STEP 8: Logging Request to Service**
+- POST to `http://mock_service:3000/api/logs`
+- Log: Success/Failure
+
+**STEP 9: Returning Response to Client**
+- Return response with headers
+- Log: Status, Complete
+
+### 3. Service API Logging
+1. Receives log data from Host Forward
+2. Creates log entry in `api_logs` table
+3. Retrieves full log data
+4. Emits Socket.IO event `new-api-log` to room `domain-{domain_id}`
+
+### 4. Portal Real-Time Update
+1. Portal page `mapping-domain/{domainId}/logs` is open
+2. Socket.IO client connected and joined room `domain-{domainId}`
+3. Receives `new-api-log` event
+4. Adds new log to list immediately (no page refresh needed)
+
+## PATH MATCHING LOGIC
+
+### Host Forward Path Matching
+
+1. **Extract First Path Segment**
+   - Full path: `/vietbank/api/master-data-service/offer/get-action-reward-detail-for-sdk`
+   - First segment: `/vietbank`
+
+2. **Call API to Get Mapping**
+   - API: `GET http://mock_service:3000/api/config/mappingDomain`
+   - Find mapping where `path` matches first segment
+   - Supports:
+     - Exact match: `/vietbank` = `/vietbank`
+     - Prefix match: `/vietbank` starts with `/vietbank`
+     - Wildcard match: `/vietbank/*` matches `/vietbank`
+
+3. **Normalize Paths**
+   - Removes trailing slash for comparison
+   - `/vietbank/` = `/vietbank`
+
+4. **Build Forward Path**
+   - Remove first path segment from full path
+   - Example: `/vietbank/api/test` → `/api/test`
+
+## MOCK RESPONSES
+
+### How It Works
+
+1. **Create Mock Response** (via Portal)
+   - Select domain, path, method
+   - Configure status code, delay, headers, body
+   - State: 'Active' (return mock) or 'Forward' (forward request)
+
+2. **Host Forward Checks Mock**
+   - Before forwarding, checks: `GET /api/mock-responses/path?domainId=X&path=Y&method=Z`
+   - If mock exists and state='Active':
+     - Returns mock response immediately
+     - Applies delay if specified
+     - Skips forwarding
+
+3. **Mock Response Priority**
+   - Mock response takes priority over forwarding
+   - If mock state='Forward', continues with normal forwarding
+
+### Mock Response Fields
+- `domain_id` - Mapping domain ID
+- `path` - Relative path (without mapping prefix)
+- `method` - HTTP method (GET, POST, etc.)
+- `status_code` - HTTP status code to return
+- `delay` - Delay in milliseconds before returning response
+- `headers` - Response headers (JSON)
+- `body` - Response body (JSON or string)
+- `state` - 'Active' (return mock) or 'Forward' (forward request)
 
 ## REAL-TIME FEATURES (Socket.IO)
 
@@ -270,7 +475,7 @@ mocks/
 
 ### Client Side (Portal)
 - Socket.IO client in `portal/src/services/socketService.js`
-- Connects to service URL
+- Auto-detects service URL: `http://fw.thangvnnc.io.vn:3000` (production)
 - Auto-reconnection enabled
 - Join/leave domain rooms for real-time updates
 
@@ -301,251 +506,224 @@ mocks/
 - **InActive**: User cannot login
 - **Expired**: User account has expired (based on `expired_time` or state)
 
-## REQUEST FLOW
+## ENVIRONMENT CONFIGURATION
 
-### 1. Client Request → Host Forward
-```
-Client → GET /vietbank/api/users → Host Forward (Port 4000)
-```
+### Configuration Files
 
-### 2. Host Forward Processing
-1. Receives request at path `/vietbank/api/users`
-2. Loads mapping domains from Service API (cached, refreshed every 30s)
-3. Finds matching mapping domain by path:
-   - Exact match: `/vietbank/api/users` → `/vietbank/api/users`
-   - Prefix match: `/vietbank/api/users` → `/vietbank/*`
-   - Wildcard match: `/vietbank/api/users` → `/vietbank/*`
-4. Checks `forward_state`:
-   - `NoneApi`: Returns 404
-   - `SomeApi`/`AllApi`: Proceeds to forward
-5. Calculates forward path:
-   - Removes mapping path prefix
-   - Example: `/vietbank/api/users` with mapping `/vietbank/*` → `/api/users`
-6. Forwards request to `forward_domain + forward_path`
-7. Generates cURL command
-8. Logs request to Service API (`POST /api/logs`)
+1. **`.env.example`** - Template với tất cả variables
+2. **`.env.developer`** - Development environment
+3. **`.env.production`** - Production environment
+4. **`docker-compose.yml`** - Docker configuration với `${VAR:-default}` syntax
 
-### 3. Service API Logging
-1. Receives log data from Host Forward
-2. Creates log entry in `api_logs` table
-3. Retrieves full log data
-4. Emits Socket.IO event `new-api-log` to room `domain-{domain_id}`
+### Environment Variables
 
-### 4. Portal Real-Time Update
-1. Portal page `mapping-domain/{domainId}/logs` is open
-2. Socket.IO client connected and joined room `domain-{domainId}`
-3. Receives `new-api-log` event
-4. Adds new log to list immediately (no page refresh needed)
+#### Global
+- `NODE_ENV` - production | development
 
-## DEPENDENCIES
+#### Database
+- `DB_HOST` - mock_mysql (Docker service name)
+- `DB_PORT` - 3306
+- `DB_USER` - root
+- `DB_PASSWORD` - Test@123 (change in production!)
+- `DB_NAME` - service_dev
 
-### Service
-```json
-{
-  "express": "^4.18.2",
-  "mysql2": "^3.6.5",
-  "bcryptjs": "^2.4.3",
-  "jsonwebtoken": "^9.0.2",
-  "dotenv": "^16.3.1",
-  "cors": "^2.8.5",
-  "express-validator": "^7.0.1",
-  "socket.io": "^4.8.1"
-}
-```
+#### Service (Backend API)
+- `SERVICE_PORT` - 3000 (internal)
+- `PUBLIC_API_PORT` - 3000 (external)
+- `JWT_SECRET` - abcdefgh (change in production!)
+- `JWT_EXPIRES_IN` - 24h
+- `CORS_ORIGIN` - *
 
-### Portal
-```json
-{
-  "react": "^18.2.0",
-  "react-dom": "^18.2.0",
-  "react-router-dom": "^6.20.0",
-  "axios": "^1.6.2",
-  "socket.io-client": "^4.8.1",
-  "tailwindcss": "^3.3.6",
-  "vite": "^5.0.8"
-}
-```
+#### Host Forward
+- `HOST_FORWARD_PORT` - 4000 (internal)
+- `PUBLIC_HOST_FORWARD_PORT` - 80 (external)
+- `SERVICE_URL` - http://mock_service:3000 (Docker internal)
 
-### Host Forward
-```json
-{
-  "express": "^4.18.2",
-  "axios": "^1.6.0",
-  "dotenv": "^16.3.1",
-  "cors": "^2.8.5"
-}
-```
+#### Portal
+- `PORTAL_PORT` - 8910 (external)
+- `VITE_API_BASE_URL` - (optional, auto-detect if empty)
 
-## ENVIRONMENT VARIABLES
+#### Public Domain
+- `PUBLIC_DOMAIN` - fw.thangvnnc.io.vn
+- `PUBLIC_API_PORT` - 3000
+- `PUBLIC_PORTAL_PORT` - 8910
+- `PUBLIC_HOST_FORWARD_PORT` - 80
 
-### Service (.env.developer or .env.production)
-```
-NODE_ENV=developer
-PORT=3000
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=password
-DB_NAME=mocks_db
-JWT_SECRET=your-secret-key
-JWT_EXPIRES_IN=24h
-CORS_ORIGIN=*
-```
+### No Hard Code Policy
 
-### Portal (.env)
-```
-VITE_API_BASE_URL=http://localhost:3000
-```
+✅ **Allowed:**
+- Environment variables: `process.env.VAR_NAME`
+- Default values trong docker-compose.yml: `${VAR:-default}`
 
-### Host Forward (.env)
-```
-PORT=4000
-SERVICE_URL=http://localhost:3000
-```
+❌ **Not Allowed:**
+- Hard code URLs: `http://localhost:3000`
+- Hard code ports: `3000`, `4000`
+- Hard code domains: `fw.thangvnnc.io.vn`
 
-## SETUP & RUN
+## DOCKER DEPLOYMENT
 
-### 1. Database Setup
+### Build and Start
 ```bash
-# Create database
-mysql -u root -p
-CREATE DATABASE mocks_db;
+# Development
+docker-compose --env-file .env.developer up -d
 
-# Run initialization script
-cd service
-node scripts/initDatabase.js
+# Production
+docker-compose --env-file .env.production up -d
+
+# Or use default .env
+docker-compose up -d
 ```
 
-### 2. Install Dependencies
+### Rebuild Database
 ```bash
-# Service
-cd service
-yarn install
-
-# Portal
-cd portal
-yarn install
-
-# Host Forward
-cd host_forward
-yarn install
+./rebuild-database.sh
 ```
 
-### 3. Configure Environment
-- Copy `.env.example` to `.env.developer` (service)
-- Create `.env` files for portal and host_forward
-- Update database credentials and URLs
-
-### 4. Run Services
-
-**Terminal 1 - Service:**
+### Check Production Config
 ```bash
-cd service
-yarn dev
-# Runs on http://localhost:3000
+./check-production.sh
 ```
 
-**Terminal 2 - Portal:**
+### View Logs
 ```bash
-cd portal
-yarn dev
-# Runs on http://localhost:5173
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f host_forward
+docker-compose logs -f mock_service
+docker-compose logs -f portal
 ```
 
-**Terminal 3 - Host Forward:**
-```bash
-cd host_forward
-yarn dev
-# Runs on http://localhost:4000
+### Access URLs (Production)
+- **Portal**: `http://fw.thangvnnc.io.vn:8910`
+- **Host Forward**: `http://fw.thangvnnc.io.vn`
+- **Backend API**: `http://fw.thangvnnc.io.vn:3000`
+
+## PORTAL FEATURES
+
+### API Logs Page
+- Real-time log updates via Socket.IO
+- Mock button in separate column (before Status)
+- Forward Path column với max-width 100px, ellipsis ở đầu, hover hiển thị đầy đủ
+- Filter by domain, pagination
+- View cURL command, response headers, response body
+
+### Mock Responses Management
+- Create/Edit/Delete mock responses
+- Configure status code, delay, headers, body
+- State: Active (return mock) or Forward (forward request)
+- Create from API logs with one click
+
+## HOST FORWARD LOGGING
+
+Mỗi request có **Request ID** duy nhất để trace:
+- Format: `[timestamp-random]`
+- Logging step-by-step (9 steps)
+- Tất cả logs hiển thị trên production
+- Performance metrics (duration) ở mỗi step
+
+**Log Format:**
+```
+[requestId] [STEP X] Description
+  Detail 1: value
+  Detail 2: value
 ```
 
 ## KEY FEATURES
 
 ### 1. Dynamic Request Forwarding
-- Path-based routing with wildcard support
+- Path-based routing với first path segment matching
+- Real-time mapping domain loading từ API
 - Configurable forward states (SomeApi, AllApi, NoneApi)
 - Automatic path transformation
 
-### 2. Request Logging
+### 2. Mock Responses
+- Create mock responses từ API logs
+- Configure status code, delay, headers, body
+- Priority: Mock response > Forward request
+- State control: Active (mock) or Forward (forward)
+
+### 3. Request Logging
 - Complete request/response logging
 - cURL command generation
 - Real-time log viewing
+- Step-by-step logging với Request ID
 
-### 3. Real-Time Updates
+### 4. Real-Time Updates
 - Socket.IO integration
 - Room-based messaging
 - Automatic UI updates without refresh
 
-### 4. User Management
+### 5. User Management
 - User states (Active, InActive, Expired)
 - Expiration time support
 - Role-based access control
 
-### 5. Role-Based Authorization
+### 6. Role-Based Authorization
 - Path pattern matching
 - Multiple roles per user
 - Wildcard path support
 
 ## TESTING FLOW
 
-1. **Start all services** (Service, Portal, Host Forward)
-2. **Login to Portal** (http://localhost:5173)
+1. **Start Services**
+   ```bash
+   docker-compose --env-file .env.production up -d
+   ```
+
+2. **Login to Portal** (http://fw.thangvnnc.io.vn:8910)
    - Username: `admin`
    - Password: `Test@123`
-3. **Create Mapping Domain**:
-   - Project Name: `Test Project`
-   - Path: `/vietbank/*`
-   - Forward Domain: `https://api.example.com`
+
+3. **Create Mapping Domain**
+   - Project Name: `VietBank QA`
+   - Path: `/vietbank`
+   - Forward Domain: `https://api.vietbank.com`
    - State: `Active`
    - Forward State: `AllApi`
+
 4. **Open Logs Page**: Navigate to `mapping-domain/{id}/logs`
-5. **Make API Request**:
+
+5. **Make API Request**
    ```bash
-   curl http://localhost:4000/vietbank/api/test
+   curl http://fw.thangvnnc.io.vn/vietbank/api/test
    ```
+
 6. **Verify Real-Time Update**: New log should appear immediately in Portal
+
+7. **Create Mock Response**
+   - Click "Mock" button on log
+   - Configure status code, delay, headers, body
+   - Save
+
+8. **Test Mock Response**
+   ```bash
+   curl http://fw.thangvnnc.io.vn/vietbank/api/test
+   # Should return mock response instead of forwarding
+   ```
+
+## IMPORTANT IMPLEMENTATION DETAILS
+
+1. **Docker Internal Communication**: Host Forward calls Service via `http://mock_service:3000` (Docker internal network)
+2. **Path Matching**: Chỉ dùng first path segment để tìm mapping (e.g., `/vietbank` từ `/vietbank/api/test`)
+3. **Real-Time Mapping**: Host Forward calls API mỗi request để lấy mapping mới nhất
+4. **Mock Response Priority**: Mock response được check trước forwarding
+5. **Database Initialization**: Tự động chạy `init.sql` khi MySQL container start lần đầu
+6. **Environment Variables**: Tất cả config từ `.env` files và `docker-compose.yml`, không hard code
+7. **Portal API Detection**: Portal tự động detect API URL từ current domain (production) hoặc dùng `VITE_API_BASE_URL`
+8. **Socket.IO URL**: Portal tự động detect Socket.IO URL từ current domain (production)
+9. **Logging**: Host Forward có step-by-step logging với Request ID cho mỗi request
+10. **Path Normalization**: Xử lý trailing slash trong path matching
 
 ## NOTES
 
-- Host Forward caches mapping domains and refreshes every 30 seconds
+- Host Forward calls API mỗi request để lấy mapping mới nhất (không cache)
 - Socket.IO uses room-based messaging for efficient real-time updates
-- JWT tokens are stored in localStorage (consider httpOnly cookies for production)
+- JWT tokens are stored in localStorage
 - Database uses connection pooling for better performance
 - All JSON fields in database are stored as TEXT and parsed in application layer
 - Error handling uses custom AppError class with error codes
 - CORS is enabled for all origins (configure properly for production)
-
-## FILE STRUCTURE PATTERNS
-
-### Controllers
-- Handle HTTP requests/responses
-- Call model methods
-- Emit Socket.IO events when needed
-- Use AppError for error handling
-
-### Models
-- Static methods for database operations
-- Return data or throw errors
-- Handle JSON parsing/stringifying
-
-### Middleware
-- `auth.js`: JWT token validation
-- `authorize.js`: Role-based path checking
-- `validate.js`: Request validation using express-validator
-- `errorHandler.js`: Centralized error handling
-
-### Services (Portal)
-- Axios-based API clients
-- Socket.IO client management
-- Context providers for state management
-
-## IMPORTANT IMPLEMENTATION DETAILS
-
-1. **Socket.IO Setup**: Server uses HTTP server from Express, not separate port
-2. **Room Naming**: Rooms use format `domain-{domainId}` (string concatenation)
-3. **Path Matching**: Supports exact match, prefix match, and wildcard patterns
-4. **Log Formatting**: Headers, body, query stored as JSON strings in database
-5. **cURL Generation**: Includes all headers, query params, and body
-6. **Real-Time Updates**: Checks for duplicate logs before adding to prevent duplicates
-7. **Error Codes**: Structured error codes (1000-6999) for different error types
-
+- Services listen on `0.0.0.0` in production to accept connections from all interfaces
+- Portal uses Nginx as reverse proxy for `/api/*` and `/socket.io/*` requests

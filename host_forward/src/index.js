@@ -7,7 +7,13 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const SERVICE_URL = process.env.SERVICE_URL || 'http://localhost:3000';
+// SERVICE_URL must be set in docker-compose.yml or environment
+const SERVICE_URL = process.env.SERVICE_URL;
+if (!SERVICE_URL) {
+  console.error('ERROR: SERVICE_URL environment variable is not set!');
+  console.error('Please set SERVICE_URL in docker-compose.yml or environment');
+  process.exit(1);
+}
 
 // Middleware
 app.use(cors({
