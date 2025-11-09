@@ -71,9 +71,9 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 4000
-      # Backend API URL - Use domain with port 3000
-      # Configure in host_forward/.env.production: SERVICE_URL=http://fw.thangvnnc.io.vn:3000
-      SERVICE_URL: ${SERVICE_URL:-http://fw.thangvnnc.io.vn:3000}
+      # Backend API URL - Use Docker internal service name for internal communication
+      # Use mock_service:3000 for Docker internal network communication
+      SERVICE_URL: ${SERVICE_URL:-http://mock_service:3000}
     depends_on:
       - mock_service
     volumes:

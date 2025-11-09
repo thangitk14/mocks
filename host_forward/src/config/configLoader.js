@@ -32,9 +32,22 @@ const refreshConfig = async (serviceUrl) => {
   return loadConfig(serviceUrl);
 };
 
+// Normalize path by removing trailing slash (except for root)
+const normalizePath = (path) => {
+  if (!path || path === '/') return '/';
+  return path.endsWith('/') ? path.slice(0, -1) : path;
+};
+
 const getMappingDomainByPath = (path) => {
-  // Find exact match first
-  let domain = mappingDomains.find(d => d.path === path && d.state === 'Active');
+  // Normalize the incoming path
+  const normalizedPath = normalizePath(path);
+  
+  // Find exact match first (with and without trailing slash)
+  let domain = mappingDomains.find(d => {
+    if (d.state !== 'Active') return false;
+    const normalizedMappingPath = normalizePath(d.path);
+    return normalizedMappingPath === normalizedPath;
+  });
   
   // If no exact match, try prefix matching
   if (!domain) {
@@ -42,20 +55,50 @@ const getMappingDomainByPath = (path) => {
       if (d.state !== 'Active') return false;
       if (d.forward_state === 'NoneApi') return false;
       
-      // Handle exact path match
-      if (path.startsWith(d.path)) {
-        return true;
+      const normalizedMappingPath = normalizePath(d.path);
+      
+      // Handle exact path match (normalized)
+      if (normalizedPath.startsWith(normalizedMappingPath)) {
+        // Ensure it's a proper prefix match (not just substring)
+        const nextChar = normalizedPath[normalizedMappingPath.length];
+        if (!nextChar || nextChar === '/') {
+          return true;
+        }
       }
       
       // Handle wildcard mapping (e.g., /vietbank/sample/*)
       if (d.path.endsWith('/*')) {
         const basePath = d.path.slice(0, -1); // Remove trailing *
+        const normalizedBasePath = normalizePath(basePath);
+        
         // Check if path starts with basePath (with or without trailing slash)
-        return path.startsWith(basePath) || path === basePath.slice(0, -1);
+        if (normalizedPath.startsWith(normalizedBasePath)) {
+          const nextChar = normalizedPath[normalizedBasePath.length];
+          if (!nextChar || nextChar === '/') {
+            return true;
+          }
+        }
+        // Also check exact match without trailing slash
+        if (normalizedPath === normalizedBasePath) {
+          return true;
+        }
       }
       
       return false;
     });
+  }
+
+  // Log for debugging (only in production or when verbose)
+  if (process.env.NODE_ENV === 'production') {
+    if (!domain) {
+      console.log(`[Config] No mapping found for path: ${path} (normalized: ${normalizedPath})`);
+      console.log(`[Config] Available mappings:`, mappingDomains
+        .filter(d => d.state === 'Active')
+        .map(d => ({ path: d.path, forward_state: d.forward_state }))
+      );
+    } else {
+      console.log(`[Config] Found mapping for path: ${path} -> ${domain.path}`);
+    }
   }
 
   return domain;
