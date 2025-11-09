@@ -5,7 +5,9 @@ const {
   getMappingDomainById,
   createMappingDomain,
   updateMappingDomain,
-  deleteMappingDomain
+  deleteMappingDomain,
+  exportMappingDomain,
+  importMappingDomain
 } = require('../controllers/mappingDomainController');
 const authenticate = require('../middleware/auth');
 
@@ -27,6 +29,12 @@ router.put('/:id', updateMappingDomain);
 
 // Delete mapping domain
 router.delete('/:id', deleteMappingDomain);
+
+// Export mapping domain (with mocks)
+router.get('/:id/export', authenticate, exportMappingDomain);
+
+// Import mapping domain (with mocks)
+router.post('/import', authenticate, importMappingDomain);
 
 module.exports = router;
 

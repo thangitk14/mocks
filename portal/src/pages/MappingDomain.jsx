@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { mappingDomainService } from '../services/mappingDomainService'
 import { useError } from '../contexts/ErrorContext'
@@ -8,7 +8,12 @@ function MappingDomain() {
   const [domains, setDomains] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [showImportDialog, setShowImportDialog] = useState(false)
+  const [importData, setImportData] = useState(null)
+  const [importNewPath, setImportNewPath] = useState('')
+  const [importOverwrite, setImportOverwrite] = useState(false)
   const [editingDomain, setEditingDomain] = useState(null)
+  const fileInputRef = useRef(null)
   const [formData, setFormData] = useState({
     project_name: '',
     path: '',
@@ -83,6 +88,102 @@ function MappingDomain() {
     navigate(`/mapping-domain/${domainId}/logs`)
   }
 
+  const handleExport = async (domainId, e) => {
+    e?.stopPropagation()
+    try {
+      const response = await mappingDomainService.export(domainId)
+      const exportData = response.data
+
+      // Create filename with domain info
+      const filename = `mapping-domain-${exportData.mappingDomain.path.replace(/\//g, '_')}-${new Date().toISOString().split('T')[0]}.json`
+
+      // Create blob and download
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to export mapping domain')
+    }
+  }
+
+  const handleImportFileSelect = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result)
+        if (!data.mappingDomain) {
+          showError('Invalid import file format. Missing mappingDomain data.')
+          // Reset file input
+          if (fileInputRef.current) {
+            fileInputRef.current.value = ''
+          }
+          return
+        }
+        setImportData(data)
+        setImportNewPath('')
+        setImportOverwrite(false)
+        setShowImportDialog(true)
+      } catch (error) {
+        showError('Failed to parse JSON file: ' + error.message)
+        // Reset file input on error
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+      }
+    }
+    reader.onerror = () => {
+      showError('Failed to read file')
+      // Reset file input on error
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  const handleImport = async () => {
+    try {
+      // Check if path already exists
+      const existingDomain = domains.find(d => d.path === (importNewPath || importData.mappingDomain.path))
+      
+      if (existingDomain && !importOverwrite && !importNewPath) {
+        showError('Path already exists. Please choose to overwrite or enter a new path.')
+        return
+      }
+
+      await mappingDomainService.import(importData, {
+        newPath: importNewPath || undefined,
+        overwrite: importOverwrite
+      })
+
+      setShowImportDialog(false)
+      setImportData(null)
+      setImportNewPath('')
+      setImportOverwrite(false)
+      // Reset file input after successful import
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      fetchDomains()
+    } catch (error) {
+      const errorMessage = error.response?.data?.error?.message || error.response?.data?.message || 'Failed to import mapping domain'
+      if (error.response?.data?.error?.errorCode === 'PATH_ALREADY_EXISTS') {
+        showError('Path already exists. Please choose to overwrite or enter a new path.')
+      } else {
+        showError(errorMessage)
+      }
+    }
+  }
+
   if (loading) {
     return <div className="text-center py-8">Loading...</div>
   }
@@ -91,16 +192,28 @@ function MappingDomain() {
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">Mapping Domain Management</h2>
-        <button
-          onClick={() => {
-            setShowForm(true)
-            setEditingDomain(null)
-            setFormData({ project_name: '', path: '', forward_domain: '', state: 'Active', forward_state: 'NoneApi' })
-          }}
-          className="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-sm md:text-base"
-        >
-          Add Mapping Domain
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <label className="w-full sm:w-auto px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition text-sm md:text-base text-center cursor-pointer">
+            Import
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImportFileSelect}
+              className="hidden"
+            />
+          </label>
+          <button
+            onClick={() => {
+              setShowForm(true)
+              setEditingDomain(null)
+              setFormData({ project_name: '', path: '', forward_domain: '', state: 'Active', forward_state: 'NoneApi' })
+            }}
+            className="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-sm md:text-base"
+          >
+            Add Mapping Domain
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -223,6 +336,13 @@ function MappingDomain() {
                   <td className="px-3 md:px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     <div className="flex gap-2">
                       <button
+                        onClick={(e) => handleExport(domain.id, e)}
+                        className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 text-sm md:text-base"
+                        title="Export mapping and mocks"
+                      >
+                        Export
+                      </button>
+                      <button
                         onClick={() => handleEdit(domain)}
                         className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm md:text-base"
                       >
@@ -245,6 +365,135 @@ function MappingDomain() {
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">No mapping domains found</div>
         )}
       </div>
+
+      {/* Import Dialog */}
+      {showImportDialog && importData && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            // Only close if clicking on backdrop, not on dialog content
+            if (e.target === e.currentTarget) {
+              setShowImportDialog(false)
+              setImportData(null)
+              setImportNewPath('')
+              setImportOverwrite(false)
+              // Reset file input when closing dialog
+              if (fileInputRef.current) {
+                fileInputRef.current.value = ''
+              }
+            }
+          }}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">Import Mapping Domain</h3>
+              
+              <div className="mb-4">
+                <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Mapping Domain Info:</h4>
+                <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded text-sm">
+                  <p className="text-gray-900 dark:text-gray-100"><span className="font-medium text-gray-700 dark:text-gray-300">Project:</span> {importData.mappingDomain.project_name}</p>
+                  <p className="text-gray-900 dark:text-gray-100"><span className="font-medium text-gray-700 dark:text-gray-300">Path:</span> {importData.mappingDomain.path}</p>
+                  <p className="text-gray-900 dark:text-gray-100"><span className="font-medium text-gray-700 dark:text-gray-300">Forward Domain:</span> {importData.mappingDomain.forward_domain}</p>
+                  <p className="text-gray-900 dark:text-gray-100"><span className="font-medium text-gray-700 dark:text-gray-300">State:</span> {importData.mappingDomain.state}</p>
+                  <p className="text-gray-900 dark:text-gray-100"><span className="font-medium text-gray-700 dark:text-gray-300">Forward State:</span> {importData.mappingDomain.forward_state}</p>
+                  <p className="text-gray-900 dark:text-gray-100"><span className="font-medium text-gray-700 dark:text-gray-300">Mock Responses:</span> {importData.mockResponses?.length || 0}</p>
+                </div>
+              </div>
+
+              {(() => {
+                const originalPath = importData.mappingDomain.path
+                const originalPathExists = domains.find(d => d.path === originalPath)
+                const newPathExists = importNewPath ? domains.find(d => d.path === importNewPath) : null
+                const targetPath = importNewPath || originalPath
+                const existingDomain = originalPathExists || newPathExists
+                
+                if (!originalPathExists && !newPathExists) return null
+                
+                return (
+                  <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
+                    {originalPathExists && (
+                      <p className="text-yellow-800 dark:text-yellow-200 font-medium mb-2">
+                        ⚠️ Path "{originalPath}" already exists!
+                      </p>
+                    )}
+                    {newPathExists && importNewPath && (
+                      <p className="text-yellow-800 dark:text-yellow-200 font-medium mb-2">
+                        ⚠️ New path "{importNewPath}" also already exists!
+                      </p>
+                    )}
+                    <div className="space-y-3">
+                      {originalPathExists && (
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={importOverwrite}
+                            onChange={(e) => {
+                              e.stopPropagation()
+                              setImportOverwrite(e.target.checked)
+                              if (e.target.checked) setImportNewPath('')
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mr-2 w-4 h-4 text-green-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-green-500 dark:focus:ring-green-600 focus:ring-2 cursor-pointer"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Overwrite existing mapping (will delete existing mocks)</span>
+                        </label>
+                      )}
+                      <div>
+                        <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Or enter new path:</label>
+                        <input
+                          type="text"
+                          value={importNewPath}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            setImportNewPath(e.target.value)
+                            if (e.target.value) setImportOverwrite(false)
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          onFocus={(e) => e.stopPropagation()}
+                          placeholder="/new-path"
+                          className="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                        />
+                        {newPathExists && importNewPath && (
+                          <p className="text-yellow-700 dark:text-yellow-300 text-xs mt-1">
+                            This path also exists. Please choose a different path or enable overwrite.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+
+              <div className="flex gap-2 mt-6">
+                <button
+                  onClick={handleImport}
+                  className="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+                >
+                  Import
+                </button>
+                <button
+                  onClick={() => {
+                    setShowImportDialog(false)
+                    setImportData(null)
+                    setImportNewPath('')
+                    setImportOverwrite(false)
+                    // Reset file input when canceling
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = ''
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
