@@ -1,0 +1,22 @@
+# Split DNS - Internal Network Hosts File
+# File này dùng để cấu hình domain trỏ về Private IP (0.0.0.0) cho mạng nội bộ
+# 
+# Cách sử dụng:
+# - Linux/macOS: sudo cp hosts.internal /etc/hosts
+# - Windows: Copy nội dung vào C:\Windows\System32\drivers\etc\hosts (cần quyền admin)
+#
+# Lưu ý: Backup file hosts gốc trước khi thay thế!
+
+# Default localhost entries
+127.0.0.1       localhost
+::1             localhost
+
+# Split DNS - Internal Network
+# Domain trỏ về Private IP (0.0.0.0) cho mạng nội bộ
+# 0.0.0.0 sẽ route về local network interface
+0.0.0.0         fw.thangvnnc.io.vn
+
+# Thêm các domain khác nếu cần
+# 0.0.0.0         api.thangvnnc.io.vn
+# 0.0.0.0         portal.thangvnnc.io.vn
+

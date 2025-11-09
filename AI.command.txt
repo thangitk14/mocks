@@ -605,7 +605,7 @@ docker-compose logs -f portal
 ### API Logs Page
 - Real-time log updates via Socket.IO
 - Mock button in separate column (before Status)
-- Forward Path column với max-width 100px, ellipsis ở đầu, hover hiển thị đầy đủ
+- Forward Path column với max-width 200px, ellipsis ở đầu, hover hiển thị đầy đủ
 - Filter by domain, pagination
 - View cURL command, response headers, response body
 
@@ -727,3 +727,38 @@ Mỗi request có **Request ID** duy nhất để trace:
 - CORS is enabled for all origins (configure properly for production)
 - Services listen on `0.0.0.0` in production to accept connections from all interfaces
 - Portal uses Nginx as reverse proxy for `/api/*` and `/socket.io/*` requests
+
+## SPLIT DNS CONFIGURATION
+
+Split DNS cho phép domain trỏ đến các IP khác nhau tùy thuộc vào vị trí của client:
+- **Bên ngoài (External)**: Domain → Public IP
+- **Bên trong (Internal)**: Domain → Private IP (0.0.0.0)
+
+### Cấu hình
+
+#### 1. DNS Server nội bộ
+Cấu hình DNS server nội bộ để trả về Private IP (0.0.0.0) cho domain `fw.thangvnnc.io.vn`
+
+#### 2. File hosts (Cho máy nội bộ)
+Sử dụng file `hosts.internal` hoặc script tự động:
+
+**Linux/macOS:**
+```bash
+sudo ./setup-internal-hosts.sh
+```
+
+**Windows:**
+```powershell
+.\setup-internal-hosts.ps1
+```
+
+#### 3. Kiểm tra
+```bash
+# Từ máy nội bộ - phải trả về 0.0.0.0
+nslookup fw.thangvnnc.io.vn
+
+# Từ máy bên ngoài - phải trả về Public IP
+nslookup fw.thangvnnc.io.vn
+```
+
+Xem chi tiết trong file `SPLIT_DNS.md`
