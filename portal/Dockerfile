@@ -3,6 +3,14 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Build arguments for Vite environment variables
+ARG VITE_SERVICE_DOMAIN=sv.thangvnnc.io.vn
+ARG VITE_API_BASE_URL
+
+# Set environment variables for build
+ENV VITE_SERVICE_DOMAIN=${VITE_SERVICE_DOMAIN}
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
 # Copy package files
 COPY package*.json ./
 

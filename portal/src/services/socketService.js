@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client'
 
-// Auto-detect Socket URL: use env variable, or detect from current domain, or fallback to localhost
+// Auto-detect Socket URL: use env variable, or use service domain, or fallback to localhost
 const getSocketURL = () => {
   // If VITE_API_BASE_URL is explicitly set, use it
   if (import.meta.env.VITE_API_BASE_URL) {
@@ -8,15 +8,13 @@ const getSocketURL = () => {
     return import.meta.env.VITE_API_BASE_URL
   }
   
-  // In production, try to detect Socket URL from current domain
+  // In production, use service domain (sv.thangvnnc.io.vn)
   if (import.meta.env.MODE === 'production') {
     const protocol = window.location.protocol
-    const hostname = window.location.hostname
-    
-    // Nginx will proxy /socket.io requests to backend service
-    // Use same domain and protocol (no port needed)
-    const socketUrl = `${protocol}//${hostname}`
-    console.log('[Socket] Production mode - detected Socket URL:', socketUrl)
+    // Use service domain for Socket.IO connections
+    const serviceDomain = import.meta.env.VITE_SERVICE_DOMAIN || 'sv.thangvnnc.io.vn'
+    const socketUrl = `${protocol}//${serviceDomain}`
+    console.log('[Socket] Production mode - using service domain:', socketUrl)
     return socketUrl
   }
   

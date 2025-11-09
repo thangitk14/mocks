@@ -41,9 +41,10 @@ request_certificate() {
     fi
 }
 
-# Check if certificates exist for both domains
+# Check if certificates exist for all domains
 HOST_FORWARD_CERT_EXISTS=false
 PORTAL_CERT_EXISTS=false
+SERVICE_CERT_EXISTS=false
 
 if [ -f "/etc/letsencrypt/live/${HOST_FORWARD_DOMAIN}/fullchain.pem" ]; then
     HOST_FORWARD_CERT_EXISTS=true
@@ -55,12 +56,17 @@ if [ -f "/etc/letsencrypt/live/${PORTAL_DOMAIN}/fullchain.pem" ]; then
     echo "Certificate found for ${PORTAL_DOMAIN}"
 fi
 
+if [ -f "/etc/letsencrypt/live/${SERVICE_DOMAIN}/fullchain.pem" ]; then
+    SERVICE_CERT_EXISTS=true
+    echo "Certificate found for ${SERVICE_DOMAIN}"
+fi
+
 # If certificates don't exist, start in HTTP-only mode
-if [ "$HOST_FORWARD_CERT_EXISTS" = false ] || [ "$PORTAL_CERT_EXISTS" = false ]; then
+if [ "$HOST_FORWARD_CERT_EXISTS" = false ] || [ "$PORTAL_CERT_EXISTS" = false ] || [ "$SERVICE_CERT_EXISTS" = false ]; then
     echo "Some certificates not found. Starting nginx in HTTP-only mode for initial certificate generation..."
     
     # Create HTTP-only config for certificate generation
-    envsubst '${HOST_FORWARD_DOMAIN} ${PORTAL_DOMAIN}' < /etc/nginx/templates/http-only.conf.template > /etc/nginx/conf.d/default.conf
+    envsubst '${HOST_FORWARD_DOMAIN} ${PORTAL_DOMAIN} ${SERVICE_DOMAIN}' < /etc/nginx/templates/http-only.conf.template > /etc/nginx/conf.d/default.conf
     
     # Test nginx config
     nginx -t || {
@@ -89,17 +95,24 @@ if [ "$HOST_FORWARD_CERT_EXISTS" = false ] || [ "$PORTAL_CERT_EXISTS" = false ];
         fi
     fi
     
+    if [ "$SERVICE_CERT_EXISTS" = false ]; then
+        request_certificate ${SERVICE_DOMAIN}
+        if [ -f "/etc/letsencrypt/live/${SERVICE_DOMAIN}/fullchain.pem" ]; then
+            SERVICE_CERT_EXISTS=true
+        fi
+    fi
+    
     # If certificates were generated, update nginx config
-    if [ "$HOST_FORWARD_CERT_EXISTS" = true ] && [ "$PORTAL_CERT_EXISTS" = true ]; then
+    if [ "$HOST_FORWARD_CERT_EXISTS" = true ] && [ "$PORTAL_CERT_EXISTS" = true ] && [ "$SERVICE_CERT_EXISTS" = true ]; then
         echo "Updating nginx config with SSL..."
         # Replace with full SSL config
-        envsubst '${HOST_FORWARD_DOMAIN} ${PORTAL_DOMAIN}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
+        envsubst '${HOST_FORWARD_DOMAIN} ${PORTAL_DOMAIN} ${SERVICE_DOMAIN}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
         
         # Test new config
         nginx -t || {
             echo "SSL nginx config test failed! Keeping HTTP-only mode."
             # Revert to HTTP-only
-            envsubst '${HOST_FORWARD_DOMAIN} ${PORTAL_DOMAIN}' < /etc/nginx/templates/http-only.conf.template > /etc/nginx/conf.d/default.conf
+            envsubst '${HOST_FORWARD_DOMAIN} ${PORTAL_DOMAIN} ${SERVICE_DOMAIN}' < /etc/nginx/templates/http-only.conf.template > /etc/nginx/conf.d/default.conf
         }
         
         # Reload nginx with SSL config
@@ -110,11 +123,12 @@ if [ "$HOST_FORWARD_CERT_EXISTS" = false ] || [ "$PORTAL_CERT_EXISTS" = false ];
         echo "You can manually request certificates later using:"
         echo "  docker-compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${HOST_FORWARD_DOMAIN}"
         echo "  docker-compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${PORTAL_DOMAIN}"
+        echo "  docker-compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${SERVICE_DOMAIN}"
     fi
 else
     echo "All certificates found. Starting nginx with SSL..."
     # Replace environment variables in nginx config template
-    envsubst '${HOST_FORWARD_DOMAIN} ${PORTAL_DOMAIN}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
+    envsubst '${HOST_FORWARD_DOMAIN} ${PORTAL_DOMAIN} ${SERVICE_DOMAIN}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
 fi
 
 # Start cron for certificate renewal

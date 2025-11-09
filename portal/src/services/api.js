@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-// Auto-detect API URL: use env variable, or detect from current domain, or fallback to localhost
+// Auto-detect API URL: use env variable, or use service domain, or fallback to localhost
 const getApiBaseURL = () => {
   // If VITE_API_BASE_URL is explicitly set, use it
   if (import.meta.env.VITE_API_BASE_URL) {
@@ -8,15 +8,13 @@ const getApiBaseURL = () => {
     return import.meta.env.VITE_API_BASE_URL
   }
   
-  // In production, try to detect API URL from current domain
+  // In production, use service domain (sv.thangvnnc.io.vn)
   if (import.meta.env.MODE === 'production') {
     const protocol = window.location.protocol
-    const hostname = window.location.hostname
-    
-    // Nginx will proxy /api requests to backend service
-    // Use same domain and protocol (no port needed)
-    const apiUrl = `${protocol}//${hostname}`
-    console.log('[API] Production mode - detected API URL:', apiUrl)
+    // Use service domain for API calls
+    const serviceDomain = import.meta.env.VITE_SERVICE_DOMAIN || 'sv.thangvnnc.io.vn'
+    const apiUrl = `${protocol}//${serviceDomain}`
+    console.log('[API] Production mode - using service domain:', apiUrl)
     return apiUrl
   }
   

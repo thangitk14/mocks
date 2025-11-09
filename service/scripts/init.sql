@@ -216,10 +216,10 @@ INSERT IGNORE INTO roles (code, name, path) VALUES
   ('USER_MANAGER', 'User Manager', '/users/*'),
   ('VIEWER', 'Viewer', '/view/*');
 
--- Insert default admin user
+-- Insert or update default admin user
 -- Password: Test@123 (bcrypt hashed with 10 rounds)
 -- Hash: $2a$10$tAjbvG5/Z9Ts149obxmokeDTD3MBQ79jGHBDJH/nHCiiuDJvRmWFu
-INSERT IGNORE INTO users (id, name, username, password, created_by, updated_by, state, expired_time)
+INSERT INTO users (id, name, username, password, created_by, updated_by, state, expired_time)
 VALUES (
   1,
   'System Administrator',
@@ -229,10 +229,20 @@ VALUES (
   0,
   'Active',
   NULL
-);
+)
+ON DUPLICATE KEY UPDATE
+  name = 'System Administrator',
+  username = 'admin',
+  password = '$2a$10$tAjbvG5/Z9Ts149obxmokeDTD3MBQ79jGHBDJH/nHCiiuDJvRmWFu',
+  updated_by = 0,
+  state = 'Active',
+  expired_time = NULL;
+
+-- Delete existing role assignments for admin user (to ensure clean state)
+DELETE FROM role_user WHERE user_id = 1;
 
 -- Assign ADMIN role to admin user
-INSERT IGNORE INTO role_user (user_id, role_id)
+INSERT INTO role_user (user_id, role_id)
 SELECT 1, id FROM roles WHERE code = 'ADMIN' LIMIT 1;
 
 -- ============================================
