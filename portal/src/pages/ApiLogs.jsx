@@ -195,6 +195,7 @@ function ApiLogs() {
     return 'bg-gray-100 text-gray-800'
   }
 
+
   // Extract forward path from cURL command (path only, not full URL)
   // Example: from "https://mock-3.thangvnnc.io.vn/vietbank/api/transaction-service/reward-360/GetMemberProfileAsync"
   // with mapping "/vietbank/*" => returns "api/transaction-service/reward-360/GetMemberProfileAsync"
@@ -537,24 +538,18 @@ function ApiLogs() {
                     }}
                   >
                     <div 
-                      className="max-w-[100px] text-xs md:text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors overflow-hidden group relative"
+                      className="text-xs md:text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors overflow-hidden group relative"
                       title={getForwardPath(log.toCUrl)}
                       style={{
                         direction: 'rtl',
-                        textAlign: 'left'
+                        maxWidth: '200px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        textAlign: 'right'
                       }}
                     >
-                      <span 
-                        className="inline-block"
-                        style={{
-                          direction: 'ltr',
-                          maxWidth: '100px',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          display: 'inline-block'
-                        }}
-                      >
+                      <span style={{ direction: 'ltr', unicodeBidi: 'embed' }}>
                         {getForwardPath(log.toCUrl)}
                       </span>
                       <div 
