@@ -2,6 +2,8 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
 const config = require('./config/config');
 require('./config/database'); // Initialize database connection
 
@@ -48,6 +50,25 @@ app.use('/api/users', userRoutes);
 app.use('/api/config/mappingDomain', mappingDomainRoutes);
 app.use('/api/logs', apiLogRoutes);
 app.use('/api/mock-responses', mockResponseRoutes);
+
+// Serve Postman collection file
+app.get('/api/functions/postman', (req, res) => {
+  const postmanPath = path.join(__dirname, '../../postman.json');
+  
+  if (fs.existsSync(postmanPath)) {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename="postman-collection.json"');
+    res.sendFile(postmanPath);
+  } else {
+    res.status(404).json({
+      success: false,
+      error: {
+        code: 1002,
+        message: 'Postman collection file not found'
+      }
+    });
+  }
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {

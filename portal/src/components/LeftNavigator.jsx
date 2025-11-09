@@ -1,10 +1,13 @@
-import { NavLink } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 
 function LeftNavigator({ onToggle }) {
   const { hasPermission } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const location = useLocation()
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const navItems = [
     {
@@ -13,30 +16,55 @@ function LeftNavigator({ onToggle }) {
       permission: null, // No permission required
     },
     {
-      path: '/roles',
-      label: 'Roles',
-      permission: '/roles/*',
-    },
-    {
-      path: '/role-user',
-      label: 'RoleUser',
-      permission: '/role_user/*',
-    },
-    {
-      path: '/users',
-      label: 'Users',
-      permission: '/users/*',
-    },
-    {
       path: '/mapping-domain',
       label: 'MappingDomain',
       permission: '/config/*',
     },
   ]
 
+  const settingsItems = [
+    {
+      path: '/users',
+      label: 'Users',
+      permission: '/users/*',
+    },
+    {
+      path: '/roles',
+      label: 'Roles',
+      permission: '/roles/*',
+    },
+    {
+      path: '/role-user',
+      label: 'UserRole',
+      permission: '/role_user/*',
+    },
+    {
+      path: '/functions',
+      label: 'Functions',
+      permission: null, // No permission required
+    },
+  ]
+
   const visibleItems = navItems.filter((item) =>
     !item.permission || hasPermission(item.permission)
   )
+
+  const visibleSettingsItems = settingsItems.filter((item) =>
+    !item.permission || hasPermission(item.permission)
+  )
+
+  // Check if any settings item is active
+  const isSettingsActive = visibleSettingsItems.some((item) => {
+    const currentPath = location.pathname
+    return currentPath === item.path || currentPath.startsWith(item.path + '/')
+  })
+
+  // Auto-open settings if one of its items is active
+  useEffect(() => {
+    if (isSettingsActive) {
+      setSettingsOpen(true)
+    }
+  }, [location.pathname, isSettingsActive])
 
   return (
     <nav className="w-64 md:w-64 bg-gray-800 dark:bg-gray-900 text-white h-full p-4 relative shadow-lg flex flex-col overflow-hidden">
@@ -81,6 +109,56 @@ function LeftNavigator({ onToggle }) {
             </NavLink>
           </li>
         ))}
+        
+        {/* Settings Menu with Submenu */}
+        {visibleSettingsItems.length > 0 && (
+          <li>
+            <button
+              onClick={() => setSettingsOpen(!settingsOpen)}
+              className={`w-full flex items-center justify-between px-4 py-2 rounded transition text-sm md:text-base ${
+                isSettingsActive
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white'
+                  : 'text-gray-300 hover:bg-gray-700 dark:hover:bg-gray-800'
+              }`}
+            >
+              <span>Settings</span>
+              <svg
+                className={`w-4 h-4 transition-transform ${settingsOpen ? 'rotate-90' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            {settingsOpen && (
+              <ul className="ml-4 mt-2 space-y-1">
+                {visibleSettingsItems.map((item) => (
+                  <li key={item.path}>
+                    <NavLink
+                      to={item.path}
+                      onClick={(e) => {
+                        // Only close navigation on mobile (when window width < 768px)
+                        if (window.innerWidth < 768) {
+                          onToggle()
+                        }
+                      }}
+                      className={({ isActive }) =>
+                        `block px-4 py-2 rounded transition text-sm md:text-base ${
+                          isActive
+                            ? 'bg-blue-600 dark:bg-blue-700 text-white'
+                            : 'text-gray-300 hover:bg-gray-700 dark:hover:bg-gray-800'
+                        }`
+                      }
+                    >
+                      {item.label}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        )}
       </ul>
       {/* Theme Toggle Button at Bottom */}
       <div className="mt-auto pt-4 border-t border-gray-700 dark:border-gray-600 flex-shrink-0">

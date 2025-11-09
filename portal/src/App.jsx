@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import Roles from './pages/Roles'
 import RoleUser from './pages/RoleUser'
 import Users from './pages/Users'
+import Functions from './pages/Functions'
 import MappingDomain from './pages/MappingDomain'
 import ApiLogs from './pages/ApiLogs'
 import MockResponses from './pages/MockResponses'
@@ -41,6 +42,7 @@ function AppRoutes() {
         <Route path="roles" element={<Roles />} />
         <Route path="role-user" element={<RoleUser />} />
         <Route path="users" element={<Users />} />
+        <Route path="functions" element={<Functions />} />
         <Route path="mapping-domain" element={<MappingDomain />} />
         <Route path="mapping-domain/:domainId/logs" element={<ApiLogs />} />
         <Route path="mapping-domain/:domainId/mocks" element={<MockResponses />} />
