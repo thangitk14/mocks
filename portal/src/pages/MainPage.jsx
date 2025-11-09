@@ -43,10 +43,12 @@ function MainPage() {
         {!showNavigation && (
           <button
             onClick={() => setShowNavigation(!showNavigation)}
-            className="hidden md:block fixed top-16 left-0 z-40 bg-gray-700 text-white px-3 py-2 rounded-r-md hover:bg-gray-600 transition-all duration-300 shadow-lg"
+            className="hidden md:block fixed top-16 left-0 z-40 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white px-3 py-2 rounded-r-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-300 shadow-lg"
             aria-label="Show Navigation"
           >
-            ▶
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </button>
         )}
         <main className="flex-1 p-4 md:p-6 w-full overflow-y-auto">
