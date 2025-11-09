@@ -87,11 +87,13 @@ const createMockResponse = async (req, res, next) => {
     }
 
     // Check if mock response already exists for this domain, path, and method
+    // Only update if existing mock is still Active (not Disable)
+    // This allows creating new mocks even when old ones are Disabled
     const existing = await MockResponse.findByDomainAndPath(domain_id, path, method);
-    if (existing) {
-      // Update existing instead of creating new
+    if (existing && existing.state === 'Active') {
+      // Update existing Active mock instead of creating new
       const updated = await MockResponse.update(existing.id, {
-        name: name || path, // Default to path if not provided
+        name: name || '', // Default to empty string if not provided
         status_code,
         delay: delay || 0,
         headers: headers || {},
@@ -109,10 +111,11 @@ const createMockResponse = async (req, res, next) => {
         });
       }
     }
+    // If no Active mock exists (or existing is Disabled), create new one
 
     const mockResponseId = await MockResponse.create({
       domain_id,
-      name: name || path, // Default to path if not provided
+      name: name || '', // Default to empty string if not provided
       path,
       method,
       status_code,
@@ -211,12 +214,39 @@ const deleteMockResponse = async (req, res, next) => {
   }
 };
 
+const disableByPathAndMethod = async (req, res, next) => {
+  try {
+    const { domainId, path, method } = req.body;
+
+    if (!domainId || !path || !method) {
+      throw new AppError({
+        message: 'domainId, path, and method are required',
+        statusCode: 400,
+        errorCode: 'MISSING_REQUIRED_FIELDS'
+      });
+    }
+
+    const affectedRows = await MockResponse.disableByPathAndMethod(domainId, path, method);
+
+    res.json({
+      success: true,
+      data: {
+        affectedRows
+      },
+      message: `Disabled ${affectedRows} mock response(s)`
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getMockResponses,
   getMockResponseById,
   getMockResponseByPath,
   createMockResponse,
   updateMockResponse,
-  deleteMockResponse
+  deleteMockResponse,
+  disableByPathAndMethod
 };
 

@@ -94,11 +94,12 @@ CREATE TABLE IF NOT EXISTS mock_responses (
   delay INT DEFAULT 0,
   headers TEXT,
   body TEXT,
-  state ENUM('Active', 'Forward') DEFAULT 'Active',
+  state ENUM('Active', 'Forward', 'Disable') DEFAULT 'Active',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (domain_id) REFERENCES mapping_domains(id) ON DELETE CASCADE,
-  UNIQUE KEY unique_domain_path_method (domain_id, path, method),
+  -- Removed UNIQUE constraint to allow multiple mocks with same path/method (for Save More feature)
+  -- The latest Active mock will be used (ORDER BY created_at DESC)
   INDEX idx_domain_id (domain_id),
   INDEX idx_path (path),
   INDEX idx_method (method),
@@ -144,7 +145,64 @@ CALL AddColumnIfNotExists('api_logs', 'response_headers', 'TEXT AFTER toCUrl');
 CALL AddColumnIfNotExists('api_logs', 'response_body', 'TEXT AFTER response_headers');
 CALL AddColumnIfNotExists('mock_responses', 'name', 'VARCHAR(500) AFTER id');
 
--- Clean up procedure
+-- Migrate mock_responses state ENUM to include 'Disable'
+-- This will modify the ENUM to include 'Disable' if it doesn't exist
+DELIMITER $$
+
+CREATE PROCEDURE IF NOT EXISTS MigrateMockResponseStateEnum()
+BEGIN
+    DECLARE enumHasDisable INT DEFAULT 0;
+    
+    -- Check if 'Disable' is already in the ENUM
+    SELECT COUNT(*) INTO enumHasDisable
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'mock_responses'
+      AND COLUMN_NAME = 'state'
+      AND COLUMN_TYPE LIKE '%Disable%';
+    
+    -- If 'Disable' is not in the ENUM, add it
+    IF enumHasDisable = 0 THEN
+        ALTER TABLE mock_responses 
+        MODIFY COLUMN state ENUM('Active', 'Forward', 'Disable') DEFAULT 'Active';
+    END IF;
+END$$
+
+DELIMITER ;
+
+-- Execute migration
+CALL MigrateMockResponseStateEnum();
+
+-- Migrate: Remove UNIQUE constraint to allow multiple mocks with same path/method
+-- This allows "Save More" feature to create multiple mocks
+DELIMITER $$
+
+CREATE PROCEDURE IF NOT EXISTS RemoveUniqueConstraintIfExists()
+BEGIN
+    DECLARE constraintExists INT DEFAULT 0;
+    
+    -- Check if UNIQUE constraint exists
+    SELECT COUNT(*) INTO constraintExists
+    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'mock_responses'
+      AND CONSTRAINT_NAME = 'unique_domain_path_method'
+      AND CONSTRAINT_TYPE = 'UNIQUE';
+    
+    -- If constraint exists, remove it
+    IF constraintExists > 0 THEN
+        ALTER TABLE mock_responses DROP INDEX unique_domain_path_method;
+    END IF;
+END$$
+
+DELIMITER ;
+
+-- Execute migration
+CALL RemoveUniqueConstraintIfExists();
+
+-- Clean up procedures
+DROP PROCEDURE IF EXISTS RemoveUniqueConstraintIfExists;
+DROP PROCEDURE IF EXISTS MigrateMockResponseStateEnum;
 DROP PROCEDURE IF EXISTS AddColumnIfNotExists;
 
 -- ============================================

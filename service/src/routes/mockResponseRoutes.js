@@ -6,7 +6,8 @@ const {
   getMockResponseByPath,
   createMockResponse,
   updateMockResponse,
-  deleteMockResponse
+  deleteMockResponse,
+  disableByPathAndMethod
 } = require('../controllers/mockResponseController');
 const authenticate = require('../middleware/auth');
 
@@ -30,6 +31,9 @@ router.put('/:id', updateMockResponse);
 
 // Delete mock response
 router.delete('/:id', deleteMockResponse);
+
+// Disable mock responses by path and method
+router.post('/disable', disableByPathAndMethod);
 
 module.exports = router;
 

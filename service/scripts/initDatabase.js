@@ -166,11 +166,12 @@ async function initDatabase() {
         delay INT DEFAULT 0,
         headers TEXT,
         body TEXT,
-        state ENUM('Active', 'Forward') DEFAULT 'Active',
+        state ENUM('Active', 'Forward', 'Disable') DEFAULT 'Active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (domain_id) REFERENCES mapping_domains(id) ON DELETE CASCADE,
-        UNIQUE KEY unique_domain_path_method (domain_id, path, method),
+        -- Removed UNIQUE constraint to allow multiple mocks with same path/method (for Save More feature)
+        -- The latest Active mock will be used (ORDER BY created_at DESC)
         INDEX idx_domain_id (domain_id),
         INDEX idx_path (path),
         INDEX idx_method (method),
@@ -179,7 +180,11 @@ async function initDatabase() {
     `);
     console.log('Mock responses table created or already exists');
 
-    // Add name column if it doesn't exist (for existing tables)
+    // ============================================
+    // MIGRATIONS FOR MOCK_RESPONSES TABLE
+    // ============================================
+
+    // Migration 1: Add name column if it doesn't exist (for existing tables)
     try {
       await connection.query(`
         ALTER TABLE mock_responses 
@@ -193,7 +198,71 @@ async function initDatabase() {
       }
     }
 
-    // Add response_headers and response_body columns if they don't exist (for existing tables)
+    // Migration 2: Update state ENUM to include 'Disable' if it doesn't exist
+    try {
+      const [rows] = await connection.query(`
+        SELECT COLUMN_TYPE 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'mock_responses' 
+          AND COLUMN_NAME = 'state'
+      `);
+      
+      if (rows && rows.length > 0) {
+        const columnType = rows[0].COLUMN_TYPE;
+        // Check if 'Disable' is not in the ENUM
+        if (!columnType.includes('Disable')) {
+          await connection.query(`
+            ALTER TABLE mock_responses 
+            MODIFY COLUMN state ENUM('Active', 'Forward', 'Disable') DEFAULT 'Active'
+          `);
+          console.log('✓ Updated mock_responses.state ENUM to include Disable');
+        } else {
+          console.log('✓ mock_responses.state ENUM already includes Disable');
+        }
+      }
+    } catch (error) {
+      // Column might not exist yet (table not created), or already updated
+      if (error.message.includes("doesn't exist") || error.message.includes('Unknown column')) {
+        console.log('State column does not exist yet (will be created with correct ENUM)');
+      } else {
+        console.log('Error checking/updating state ENUM (may already be updated):', error.message);
+      }
+    }
+
+    // Migration 3: Remove UNIQUE constraint to allow multiple mocks with same path/method
+    // This allows "Save More" feature to create multiple mocks
+    try {
+      const [constraints] = await connection.query(`
+        SELECT CONSTRAINT_NAME 
+        FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'mock_responses' 
+          AND CONSTRAINT_NAME = 'unique_domain_path_method'
+          AND CONSTRAINT_TYPE = 'UNIQUE'
+      `);
+      
+      if (constraints && constraints.length > 0) {
+        await connection.query(`
+          ALTER TABLE mock_responses DROP INDEX unique_domain_path_method
+        `);
+        console.log('✓ Removed UNIQUE constraint from mock_responses (allows multiple mocks with same path/method)');
+      } else {
+        console.log('✓ UNIQUE constraint does not exist (may have been removed already)');
+      }
+    } catch (error) {
+      if (error.message.includes("doesn't exist") || error.message.includes('Unknown key')) {
+        console.log('UNIQUE constraint does not exist (may have been removed already)');
+      } else {
+        console.log('Error removing UNIQUE constraint:', error.message);
+      }
+    }
+
+    // ============================================
+    // MIGRATIONS FOR API_LOGS TABLE
+    // ============================================
+
+    // Migration 4: Add response_headers and response_body columns if they don't exist (for existing tables)
     try {
       await connection.query(`
         ALTER TABLE api_logs 

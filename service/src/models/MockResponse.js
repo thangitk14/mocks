@@ -2,8 +2,8 @@ const db = require('../config/database');
 
 class MockResponse {
   static async create({ domain_id, name, path, method, status_code, delay, headers, body, state }) {
-    // Default name to path if not provided
-    const mockName = name || path;
+    // Default name to empty string if not provided
+    const mockName = name || '';
     const [result] = await db.execute(
       'INSERT INTO mock_responses (domain_id, name, path, method, status_code, delay, headers, body, state) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
@@ -34,8 +34,9 @@ class MockResponse {
   }
 
   static async findByPath(domainId, path, method) {
+    // Get the latest mock response (most recently created) with Active state
     const [rows] = await db.execute(
-      'SELECT * FROM mock_responses WHERE domain_id = ? AND path = ? AND method = ? AND state = ?',
+      'SELECT * FROM mock_responses WHERE domain_id = ? AND path = ? AND method = ? AND state = ? ORDER BY created_at DESC LIMIT 1',
       [domainId, path, method, 'Active']
     );
     if (rows[0]) {
@@ -43,6 +44,28 @@ class MockResponse {
       rows[0].body = rows[0].body ? JSON.parse(rows[0].body) : null;
     }
     return rows[0];
+  }
+
+  static async findByPathAndMethod(domainId, path, method) {
+    // Get all mock responses for a path and method (for disabling)
+    const [rows] = await db.execute(
+      'SELECT * FROM mock_responses WHERE domain_id = ? AND path = ? AND method = ? ORDER BY created_at DESC',
+      [domainId, path, method]
+    );
+    return rows.map(row => ({
+      ...row,
+      headers: row.headers ? JSON.parse(row.headers) : {},
+      body: row.body ? JSON.parse(row.body) : null
+    }));
+  }
+
+  static async disableByPathAndMethod(domainId, path, method) {
+    // Disable all mock responses for a path and method (set state to 'Disable')
+    const [result] = await db.execute(
+      'UPDATE mock_responses SET state = ? WHERE domain_id = ? AND path = ? AND method = ?',
+      ['Disable', domainId, path, method]
+    );
+    return result.affectedRows;
   }
 
   static async findByDomainId(domainId) {

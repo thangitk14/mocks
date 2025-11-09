@@ -79,7 +79,7 @@ function MockResponses() {
 
   const handleEdit = (mock) => {
     setFormData({
-      name: mock.name || mock.path, // Use name if exists, otherwise use path
+      name: mock.name || '', // Use name if exists, otherwise empty string
       path: mock.path,
       method: mock.method,
       statusCode: mock.status_code?.toString() || '200',
@@ -104,6 +104,30 @@ function MockResponses() {
       fetchMockResponses()
     } catch (error) {
       showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to delete mock response')
+    }
+  }
+
+  const handleClone = async (mock) => {
+    try {
+      // Disable all existing mocks with same path and method
+      await mockResponseService.disableByPathAndMethod(mock.domain_id, mock.path, mock.method)
+      
+      // Create new mock with same data but new ID
+      await mockResponseService.create({
+        domain_id: mock.domain_id,
+        name: mock.name || '',
+        path: mock.path,
+        method: mock.method,
+        status_code: mock.status_code,
+        delay: mock.delay || 0,
+        headers: mock.headers || {},
+        body: mock.body || null,
+        state: 'Active' // Always Active for cloned mock
+      })
+      
+      fetchMockResponses()
+    } catch (error) {
+      showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to clone mock response')
     }
   }
 
@@ -135,7 +159,7 @@ function MockResponses() {
       if (selectedMock) {
         // Update existing mock
         await mockResponseService.update(selectedMock.id, {
-          name: formData.name.trim() || formData.path.trim(), // Default to path if name is empty
+          name: formData.name.trim() || '', // Default to empty string if name is empty
           status_code: parseInt(formData.statusCode),
           delay: parseInt(formData.delay) || 0,
           headers,
@@ -152,7 +176,7 @@ function MockResponses() {
         
         await mockResponseService.create({
           domain_id: parseInt(domainId),
-          name: formData.name.trim() || formData.path.trim(), // Default to path if name is empty
+          name: formData.name.trim() || '', // Default to empty string if name is empty
           path: formData.path.trim(),
           method: formData.method,
           status_code: parseInt(formData.statusCode),
@@ -234,8 +258,8 @@ function MockResponses() {
                   <tr key={mock.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-2 md:px-3 py-2 whitespace-nowrap text-gray-900 dark:text-white text-sm">{mock.id}</td>
                     <td className="px-2 md:px-3 py-2 text-gray-900 dark:text-white text-sm">
-                      <div className="max-w-md truncate" title={mock.name || mock.path}>
-                        {mock.name || mock.path}
+                      <div className="max-w-md truncate" title={mock.name || mock.path || 'No name'}>
+                        {mock.name || mock.path || 'No name'}
                       </div>
                     </td>
                     <td className="px-2 md:px-3 py-2 text-gray-900 dark:text-white text-sm">
@@ -268,6 +292,8 @@ function MockResponses() {
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                         mock.state === 'Active'
                           ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                          : mock.state === 'Disable'
+                          ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
                           : 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200'
                       }`}>
                         {mock.state}
@@ -280,6 +306,12 @@ function MockResponses() {
                           className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs md:text-sm"
                         >
                           Edit
+                        </button>
+                        <button
+                          onClick={() => handleClone(mock)}
+                          className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 text-xs md:text-sm"
+                        >
+                          Clone
                         </button>
                         <button
                           onClick={() => handleDelete(mock)}
@@ -328,6 +360,22 @@ function MockResponses() {
             </div>
             <div className="p-6 overflow-auto flex-1">
               <div className="space-y-4">
+                {/* State */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    State
+                  </label>
+                  <select
+                    value={formData.state}
+                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    className="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Forward">Forward</option>
+                    <option value="Disable">Disable</option>
+                  </select>
+                </div>
+
                 {/* Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -338,10 +386,10 @@ function MockResponses() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                    placeholder="Leave empty to use path as name"
+                    placeholder="Optional name for this mock"
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {selectedMock ? 'Name can be edited' : 'If empty, will default to path value'}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {selectedMock ? 'Name can be edited' : 'Optional field, leave empty if not needed'}
                   </p>
                 </div>
 
@@ -354,12 +402,9 @@ function MockResponses() {
                     type="text"
                     value={formData.path}
                     onChange={(e) => {
-                      const newPath = e.target.value
                       setFormData({ 
                         ...formData, 
-                        path: newPath,
-                        // Auto-update name to path if name is empty (only when creating new)
-                        name: !selectedMock && !formData.name ? newPath : formData.name
+                        path: e.target.value
                       })
                     }}
                     className="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
@@ -449,21 +494,6 @@ function MockResponses() {
                     style={{ maxHeight: '300px', overflowY: 'auto' }}
                     placeholder='{"message": "Hello World"}'
                   />
-                </div>
-
-                {/* State */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    State
-                  </label>
-                  <select
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    className="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Forward">Forward</option>
-                  </select>
                 </div>
               </div>
             </div>

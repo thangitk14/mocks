@@ -31,6 +31,15 @@ export const mockResponseService = {
   delete: async (id) => {
     const response = await api.delete(`/api/mock-responses/${id}`)
     return response.data
+  },
+
+  disableByPathAndMethod: async (domainId, path, method) => {
+    const response = await api.post('/api/mock-responses/disable', {
+      domainId,
+      path,
+      method
+    })
+    return response.data
   }
 }
 

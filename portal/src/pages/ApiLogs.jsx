@@ -177,7 +177,8 @@ function ApiLogs() {
 
   const totalPages = Math.ceil(total / limit)
 
-  const handleCopyCurl = async () => {
+  const handleCopyCurl = async (e) => {
+    e?.stopPropagation()
     if (selectedCurl) {
       try {
         await navigator.clipboard.writeText(selectedCurl)
@@ -383,7 +384,7 @@ function ApiLogs() {
   }
 
   // Handle mock form submit
-  const handleMockSubmit = async () => {
+  const handleMockSubmit = async (saveMore = false) => {
     if (!selectedMockLog || !domain) return
 
     try {
@@ -423,8 +424,24 @@ function ApiLogs() {
 
       const existingMock = mockResponses[selectedMockLog.id]
       
-      if (existingMock) {
-        // Update existing mock
+      if (saveMore) {
+        // Save More: Disable all existing mocks with same path and method, then create new one
+        // This creates a NEW mock response, not updating the existing one
+        await mockResponseService.disableByPathAndMethod(parseInt(domainId), path, selectedMockLog.method)
+        
+        // Create new mock (always create, never update)
+        await mockResponseService.create({
+          domain_id: parseInt(domainId),
+          path,
+          method: selectedMockLog.method,
+          status_code: parseInt(mockFormData.statusCode),
+          delay: parseInt(mockFormData.delay) || 0,
+          headers,
+          body,
+          state: 'Active' // Always Active for new mock
+        })
+      } else if (existingMock) {
+        // Update existing mock (normal Save)
         await mockResponseService.update(existingMock.id, {
           status_code: parseInt(mockFormData.statusCode),
           delay: parseInt(mockFormData.delay) || 0,
@@ -433,7 +450,7 @@ function ApiLogs() {
           state: mockFormData.state
         })
       } else {
-        // Create new mock
+        // Create new mock (first time creating)
         await mockResponseService.create({
           domain_id: parseInt(domainId),
           path,
@@ -455,6 +472,7 @@ function ApiLogs() {
         }))
       }
 
+      // Close dialog after successful save (both Save and Save More)
       setSelectedMockLog(null)
     } catch (error) {
       showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to save mock response')
@@ -754,7 +772,10 @@ function ApiLogs() {
                 Close
               </button>
               <button
-                onClick={handleCopyCurl}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleCopyCurl(e)
+                }}
                 className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-700 transition"
               >
                 Copy
@@ -885,6 +906,22 @@ function ApiLogs() {
             </div>
             <div className="p-6 overflow-auto flex-1">
               <div className="space-y-4">
+                {/* State */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    State
+                  </label>
+                  <select
+                    value={mockFormData.state}
+                    onChange={(e) => setMockFormData({ ...mockFormData, state: e.target.value })}
+                    className="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Forward">Forward</option>
+                    <option value="Disable">Disable</option>
+                  </select>
+                </div>
+
                 {/* Status Code */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -942,21 +979,6 @@ function ApiLogs() {
                     placeholder='{"message": "Hello World"}'
                   />
                 </div>
-
-                {/* State */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    State
-                  </label>
-                  <select
-                    value={mockFormData.state}
-                    onChange={(e) => setMockFormData({ ...mockFormData, state: e.target.value })}
-                    className="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Forward">Forward</option>
-                  </select>
-                </div>
               </div>
             </div>
             <div className="p-6 border-t dark:border-gray-700 flex justify-end gap-2">
@@ -967,8 +989,17 @@ function ApiLogs() {
               >
                 Cancel
               </button>
+              {mockResponses[selectedMockLog?.id] && (
+                <button
+                  onClick={() => handleMockSubmit(true)}
+                  className="px-4 py-2 bg-green-500 dark:bg-green-600 text-white rounded hover:bg-green-600 dark:hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={mockFormLoading}
+                >
+                  {mockFormLoading ? 'Saving...' : 'Save More'}
+                </button>
+              )}
               <button
-                onClick={handleMockSubmit}
+                onClick={() => handleMockSubmit(false)}
                 className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={mockFormLoading}
               >
