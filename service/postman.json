@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "service-auth-api",
-		"name": "Service Authentication API",
-		"description": "Authentication and authorization service API collection",
+		"_postman_id": "service-api",
+		"name": "Mock Service API",
+		"description": "Complete API collection for Mock Service including Authentication, Users, Roles, Mapping Domains, API Logs, and Mock Responses",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -651,6 +651,623 @@
 							]
 						},
 						"description": "Soft delete a user by setting state to InActive (requires authentication and /users/* permission)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Mapping Domain",
+			"item": [
+				{
+					"name": "Get All Mapping Domains (Public)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/config/mappingDomain",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"config",
+								"mappingDomain"
+							]
+						},
+						"description": "Get all mapping domains (public access, no authentication required)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Mapping Domain By ID (Public)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/config/mappingDomain/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"config",
+								"mappingDomain",
+								"1"
+							]
+						},
+						"description": "Get mapping domain by ID (public access, no authentication required)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Mapping Domain",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"project_name\": \"Test Project\",\n  \"path\": \"/test\",\n  \"forward_domain\": \"https://api.example.com\",\n  \"state\": \"Active\",\n  \"forward_state\": \"NoneApi\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/config/mappingDomain",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"config",
+								"mappingDomain"
+							]
+						},
+						"description": "Create a new mapping domain (requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Mapping Domain",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"project_name\": \"Updated Project\",\n  \"forward_domain\": \"https://api.updated.com\",\n  \"state\": \"Active\",\n  \"forward_state\": \"AllApi\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/config/mappingDomain/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"config",
+								"mappingDomain",
+								"1"
+							]
+						},
+						"description": "Update an existing mapping domain (requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Mapping Domain",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/config/mappingDomain/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"config",
+								"mappingDomain",
+								"1"
+							]
+						},
+						"description": "Delete a mapping domain (requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Export Mapping Domain",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/config/mappingDomain/1/export",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"config",
+								"mappingDomain",
+								"1",
+								"export"
+							]
+						},
+						"description": "Export mapping domain with all its mock responses (requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Import Mapping Domain",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"importData\": {\n    \"version\": \"1.0\",\n    \"mappingDomain\": {\n      \"project_name\": \"Imported Project\",\n      \"path\": \"/imported\",\n      \"forward_domain\": \"https://api.imported.com\",\n      \"state\": \"Active\",\n      \"forward_state\": \"NoneApi\"\n    },\n    \"mockResponses\": []\n  },\n  \"overwrite\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/config/mappingDomain/import",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"config",
+								"mappingDomain",
+								"import"
+							]
+						},
+						"description": "Import mapping domain with mock responses (requires authentication)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "API Logs",
+			"item": [
+				{
+					"name": "Create API Log (Public)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"domain_id\": 1,\n  \"method\": \"GET\",\n  \"path\": \"/test\",\n  \"status_code\": 200,\n  \"request_headers\": {},\n  \"request_body\": null,\n  \"response_headers\": {},\n  \"response_body\": \"{}\",\n  \"duration\": 100,\n  \"fromCUrl\": \"\",\n  \"toCUrl\": \"https://api.example.com/test\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/logs",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"logs"
+							]
+						},
+						"description": "Create an API log entry (public access, no authentication required - used by host_forward service)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All API Logs",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/logs?domain_id=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"logs"
+							],
+							"query": [
+								{
+									"key": "domain_id",
+									"value": "1",
+									"description": "Optional: Filter by domain ID"
+								}
+							]
+						},
+						"description": "Get all API logs (with optional domain_id query param, requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get API Log By ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/logs/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"logs",
+								"1"
+							]
+						},
+						"description": "Get a specific API log by ID (requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get API Logs By Domain ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/logs/domain/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"logs",
+								"domain",
+								"1"
+							]
+						},
+						"description": "Get all API logs for a specific domain (requires authentication)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Mock Responses",
+			"item": [
+				{
+					"name": "Get Mock Response By Path (Public)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/mock-responses/path?domain_id=1&path=/test&method=GET",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"mock-responses",
+								"path"
+							],
+							"query": [
+								{
+									"key": "domain_id",
+									"value": "1",
+									"description": "Domain ID"
+								},
+								{
+									"key": "path",
+									"value": "/test",
+									"description": "API path"
+								},
+								{
+									"key": "method",
+									"value": "GET",
+									"description": "HTTP method"
+								},
+								{
+									"key": "includeAllStates",
+									"value": "false",
+									"description": "Optional: Include all states (default: false, only Active)"
+								}
+							]
+						},
+						"description": "Get mock response by path and method (public access, no authentication required - used by host_forward service)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Mock Responses",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/mock-responses?domain_id=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"mock-responses"
+							],
+							"query": [
+								{
+									"key": "domain_id",
+									"value": "1",
+									"description": "Optional: Filter by domain ID"
+								}
+							]
+						},
+						"description": "Get all mock responses (with optional domain_id query param, requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Mock Response By ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/mock-responses/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"mock-responses",
+								"1"
+							]
+						},
+						"description": "Get a specific mock response by ID (requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Mock Response",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"domain_id\": 1,\n  \"name\": \"\",\n  \"path\": \"/test\",\n  \"method\": \"GET\",\n  \"status_code\": 200,\n  \"delay\": 0,\n  \"headers\": {},\n  \"body\": {\"message\": \"Hello World\"},\n  \"state\": \"Active\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/mock-responses",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"mock-responses"
+							]
+						},
+						"description": "Create a new mock response (requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Mock Response",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Mock\",\n  \"status_code\": 201,\n  \"delay\": 1000,\n  \"headers\": {\"Content-Type\": \"application/json\"},\n  \"body\": {\"message\": \"Updated\"},\n  \"state\": \"Active\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/mock-responses/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"mock-responses",
+								"1"
+							]
+						},
+						"description": "Update an existing mock response (requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Mock Response",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/mock-responses/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"mock-responses",
+								"1"
+							]
+						},
+						"description": "Delete a mock response (requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Disable Mock Responses By Path and Method",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"domain_id\": 1,\n  \"path\": \"/test\",\n  \"method\": \"GET\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/mock-responses/disable",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"mock-responses",
+								"disable"
+							]
+						},
+						"description": "Disable all mock responses for a specific path and method (requires authentication)"
 					},
 					"response": []
 				}

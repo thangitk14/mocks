@@ -59,6 +59,7 @@ services:
       - ./service/src:/app/src
       - ./service/scripts:/app/scripts
       - ./service/package.json:/app/package.json
+      - ./service/postman.json:/app/postman.json
       - /app/node_modules
     networks:
       - mock_service_network

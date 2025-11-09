@@ -53,18 +53,33 @@ app.use('/api/mock-responses', mockResponseRoutes);
 
 // Serve Postman collection file
 app.get('/api/functions/postman', (req, res) => {
-  const postmanPath = path.join(__dirname, '../../postman.json');
+  // Try multiple possible paths
+  const possiblePaths = [
+    path.join(__dirname, '../../postman.json'), // From src/ to service root
+    path.join(process.cwd(), 'postman.json'), // From current working directory
+    '/app/postman.json', // Absolute path in Docker container
+    path.join(__dirname, '../postman.json'), // Alternative relative path
+  ];
   
-  if (fs.existsSync(postmanPath)) {
+  let postmanPath = null;
+  for (const possiblePath of possiblePaths) {
+    if (fs.existsSync(possiblePath)) {
+      postmanPath = possiblePath;
+      break;
+    }
+  }
+  
+  if (postmanPath) {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', 'attachment; filename="postman-collection.json"');
-    res.sendFile(postmanPath);
+    res.sendFile(path.resolve(postmanPath));
   } else {
     res.status(404).json({
       success: false,
       error: {
         code: 1002,
-        message: 'Postman collection file not found'
+        message: 'Postman collection file not found',
+        searchedPaths: possiblePaths
       }
     });
   }
