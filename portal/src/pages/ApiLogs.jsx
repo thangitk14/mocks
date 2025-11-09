@@ -347,6 +347,47 @@ function ApiLogs() {
     }
   }
 
+  // Handle quick state change - disable all mocks for this path
+  const handleQuickDisableMock = async (log) => {
+    let path = getForwardPath(log.toCUrl)
+    if (!path || path === 'N/A') {
+      showError('Cannot determine path for this log')
+      return
+    }
+    
+    // Normalize path: remove leading slash, but keep '/' for root
+    path = path.replace(/^\//, '')
+    if (path === '') {
+      path = '/'
+    }
+
+    try {
+      // Disable all mocks with same path and method
+      await mockResponseService.disableByPathAndMethod(parseInt(domainId), path, log.method)
+      
+      // Refresh mock responses for this log
+      const response = await mockResponseService.getByPath(domainId, path, log.method)
+      if (response.data?.mockResponse) {
+        setMockResponses(prev => ({
+          ...prev,
+          [log.id]: response.data.mockResponse
+        }))
+      } else {
+        // Remove from mockResponses if no active mock found
+        setMockResponses(prev => {
+          const newState = { ...prev }
+          delete newState[log.id]
+          return newState
+        })
+      }
+      
+      // Refresh logs to update mock button state
+      fetchLogs()
+    } catch (error) {
+      showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to disable mock response')
+    }
+  }
+
   // Handle mock button click
   const handleMockClick = (log) => {
     let path = getForwardPath(log.toCUrl)
@@ -432,6 +473,7 @@ function ApiLogs() {
         // Create new mock (always create, never update)
         await mockResponseService.create({
           domain_id: parseInt(domainId),
+          name: '', // Empty string by default
           path,
           method: selectedMockLog.method,
           status_code: parseInt(mockFormData.statusCode),
@@ -453,6 +495,7 @@ function ApiLogs() {
         // Create new mock (first time creating)
         await mockResponseService.create({
           domain_id: parseInt(domainId),
+          name: '', // Empty string by default
           path,
           method: selectedMockLog.method,
           status_code: parseInt(mockFormData.statusCode),
@@ -582,19 +625,35 @@ function ApiLogs() {
                     className="px-2 md:px-3 py-2 whitespace-nowrap"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleMockClick(log)
-                      }}
-                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                        mockResponses[log.id]
-                          ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      Mock
-                    </button>
+                    <div className="flex gap-2 items-center">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleMockClick(log)
+                        }}
+                        className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                          mockResponses[log.id]
+                            ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        Mock
+                      </button>
+                      {mockResponses[log.id] && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleQuickDisableMock(log)
+                          }}
+                          className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
+                          title="Disable all mocks for this path"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="px-2 md:px-3 py-2 whitespace-nowrap">
                     {log.status && (
