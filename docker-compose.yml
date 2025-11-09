@@ -64,6 +64,35 @@ services:
       - mock_service_network
     command: npm start
 
+  # Nginx Reverse Proxy with SSL (Certbot) for Host Forward
+  host_forward_nginx:
+    build:
+      context: ./host_forward/nginx
+      dockerfile: Dockerfile
+    container_name: mock_host_forward_nginx
+    restart: unless-stopped
+    ports:
+      # HTTP and HTTPS ports
+      - "${PUBLIC_HOST_FORWARD_HTTP_PORT:-80}:80"
+      - "${PUBLIC_HOST_FORWARD_HTTPS_PORT:-443}:443"
+    environment:
+      DOMAIN_NAME: ${HOST_FORWARD_DOMAIN:-fw.thangvnnc.io.vn}
+      CERTBOT_EMAIL: ${CERTBOT_EMAIL:-thangvnnc@gmail.com}
+      # Default values
+      HOST_FORWARD_DOMAIN: ${HOST_FORWARD_DOMAIN:-fw.thangvnnc.io.vn}
+      PUBLIC_HOST_FORWARD_HTTP_PORT: ${PUBLIC_HOST_FORWARD_HTTP_PORT:-80}
+      PUBLIC_HOST_FORWARD_HTTPS_PORT: ${PUBLIC_HOST_FORWARD_HTTPS_PORT:-443}
+    volumes:
+      # Certificates volume
+      - certbot_data:/etc/letsencrypt
+      # ACME challenge directory
+      - certbot_www:/var/www/certbot
+    depends_on:
+      - host_forward
+    networks:
+      - mock_service_network
+    command: nginx -g "daemon off;"
+
   # Host Forward Service
   host_forward:
     build:
@@ -71,9 +100,9 @@ services:
       dockerfile: Dockerfile
     container_name: mock_host_forward
     restart: unless-stopped
-    ports:
-      # Bind to 0.0.0.0 to accept connections from all interfaces (public IP)
-      - "${PUBLIC_HOST_FORWARD_PORT:-80}:${HOST_FORWARD_PORT:-4000}"
+    # Remove direct port exposure - nginx will handle it
+    # ports:
+    #   - "${PUBLIC_HOST_FORWARD_PORT:-80}:${HOST_FORWARD_PORT:-4000}"
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${HOST_FORWARD_PORT:-4000}
@@ -113,6 +142,10 @@ services:
 
 volumes:
   mock_mysql_data:
+    driver: local
+  certbot_data:
+    driver: local
+  certbot_www:
     driver: local
 
 networks:
