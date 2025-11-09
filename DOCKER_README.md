@@ -68,7 +68,12 @@ docker-compose up -d mock_service
 - `SERVICE_URL`: http://mock_service:3000
 
 ### Portal (.env.production)
-- `VITE_API_BASE_URL`: (Optional) Nếu không set, portal sẽ tự động sử dụng relative paths và nginx sẽ proxy đến backend
+- File: `portal/.env.production`
+- `VITE_API_BASE_URL`: (Optional) 
+  - Để trống hoặc comment: Portal sẽ sử dụng relative paths (khuyến nghị)
+  - Nginx sẽ proxy `/api/*` đến `mock_service:3000`
+  - Hoặc set external URL nếu backend có domain riêng
+- **Lưu ý**: Cấu hình trong file `.env.production`, không cấu hình trong docker-compose.yml
 
 ## Production Mode
 
@@ -93,14 +98,40 @@ Khi deploy lên domain (ví dụ: `fw.thangvnnc.io.vn`):
 
 ## Ports
 
-- **3000**: Backend API (mock_service)
-- **4000**: Host Forward service
-- **80**: Frontend Portal
-- **3306**: MySQL Database
+- **3000**: Backend API (mock_service) - Public
+- **80**: Host Forward service - Public
+- **8910**: Frontend Portal - Public
+- **3306**: MySQL Database - Internal only
 
 ## Networks
 
 Tất cả services được kết nối qua network `mock_service_network` để có thể giao tiếp với nhau.
+
+## Service Communication (Endpoints)
+
+### Internal Communication (Docker Network)
+
+Các services giao tiếp với nhau qua Docker service names:
+
+- **host_forward** → **mock_service**: `http://mock_service:3000`
+  - Lấy mapping domain configuration
+  - Kiểm tra mock responses
+  - Log API requests
+
+- **mock_service** → **mock_mysql**: `mock_mysql:3306`
+  - Database connection
+
+- **portal** → **mock_service**: Qua nginx proxy
+  - `/api/*` → `http://mock_service:3000`
+  - `/socket.io/*` → `http://mock_service:3000`
+
+### External Access
+
+- **Portal**: `http://your-domain.com` hoặc `http://localhost`
+- **Host Forward**: `http://your-domain.com:4000` hoặc `http://localhost:4000`
+- **Backend API**: `http://your-domain.com:3000` hoặc `http://localhost:3000` (optional)
+
+Xem chi tiết trong file [ENDPOINTS_CONFIG.md](./ENDPOINTS_CONFIG.md)
 
 ## Health Checks
 
@@ -109,4 +140,13 @@ Tất cả services được kết nối qua network `mock_service_network` đ�
   - `http://localhost:3000/health` - Backend API
   - `http://localhost:4000/health` - Host Forward
   - `http://localhost/health` - Portal
+
+## Environment Variables Configuration
+
+Có thể cấu hình qua:
+1. **File .env.production** trong mỗi service directory
+2. **Environment variables** trong docker-compose.yml
+3. **.env file** ở root (nếu sử dụng docker-compose với env_file)
+
+Xem chi tiết cấu hình endpoints trong [ENDPOINTS_CONFIG.md](./ENDPOINTS_CONFIG.md)
 

@@ -8,10 +8,17 @@ const getApiBaseURL = () => {
     return import.meta.env.VITE_API_BASE_URL
   }
   
-  // In production, use relative path (will be proxied by nginx)
+  // In production, try to detect API URL from current domain
   if (import.meta.env.MODE === 'production') {
-    console.log('[API] Production mode - using relative path (empty string)')
-    return ''
+    const protocol = window.location.protocol
+    const hostname = window.location.hostname
+    const port = window.location.port
+    
+    // Portal runs on port 8910, API service runs on port 3000
+    // Always use port 3000 for API service on same host
+    const apiUrl = `${protocol}//${hostname}:3000`
+    console.log('[API] Production mode - detected API URL:', apiUrl)
+    return apiUrl
   }
   
   // Development fallback

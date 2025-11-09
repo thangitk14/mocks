@@ -30,16 +30,20 @@ services:
     container_name: mock_service_app
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      # Bind to 0.0.0.0 to accept connections from all interfaces (public IP)
+      - "0.0.0.0:3000:3000"
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      DB_HOST: mock_mysql
-      DB_PORT: 3306
+      # Database connection - use Docker service name
+      DB_HOST: ${DB_HOST:-mock_mysql}
+      DB_PORT: ${DB_PORT:-3306}
       DB_USER: ${DB_USER:-root}
       DB_PASSWORD: ${DB_PASSWORD:-Test@123}
       DB_NAME: ${DB_NAME:-service_dev}
-      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key_for_production}
+      # JWT configuration
+      JWT_SECRET: abcdefgh
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      # CORS - allow all origins in production (nginx handles security)
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
       PORT: 3000
     depends_on:
@@ -62,11 +66,14 @@ services:
     container_name: mock_host_forward
     restart: unless-stopped
     ports:
-      - "4000:4000"
+      # Bind to 0.0.0.0:80 to accept connections from all interfaces (public IP)
+      - "0.0.0.0:80:4000"
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 4000
-      SERVICE_URL: http://mock_service:3000
+      # Backend API URL - Use domain with port 3000
+      # Configure in host_forward/.env.production: SERVICE_URL=http://fw.thangvnnc.io.vn:3000
+      SERVICE_URL: ${SERVICE_URL:-http://fw.thangvnnc.io.vn:3000}
     depends_on:
       - mock_service
     volumes:
@@ -82,13 +89,13 @@ services:
     build:
       context: ./portal
       dockerfile: Dockerfile
-      # VITE_API_BASE_URL is optional - if not set, portal will use relative paths (proxied by nginx)
-      args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+      # Vite will automatically load .env.production file during build
+      # Configure VITE_API_BASE_URL in portal/.env.production file
     container_name: mock_portal
     restart: unless-stopped
     ports:
-      - "80:80"
+      # Bind to 0.0.0.0:8910 to accept connections from all interfaces (public IP)
+      - "0.0.0.0:8910:80"
     depends_on:
       - mock_service
     networks:

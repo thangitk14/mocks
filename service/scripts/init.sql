@@ -1,3 +1,9 @@
+-- ============================================
+-- Complete Database Initialization Script
+-- This script creates all tables and initial data
+-- Run automatically when MySQL container starts for the first time
+-- ============================================
+
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
   id INT PRIMARY KEY AUTO_INCREMENT,
@@ -39,32 +45,6 @@ CREATE TABLE IF NOT EXISTS role_user (
   INDEX idx_role_id (role_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Insert default roles
-INSERT IGNORE INTO roles (code, name, path) VALUES
-  ('ADMIN', 'Administrator', '/*'),
-  ('CONFIG_MANAGER', 'Configuration Manager', '/config/*'),
-  ('USER_MANAGER', 'User Manager', '/users/*'),
-  ('VIEWER', 'Viewer', '/view/*');
-
--- Insert default admin user
--- Password: Test@123 (bcrypt hashed)
--- Note: Password hash is generated with bcryptjs, 10 rounds
-INSERT IGNORE INTO users (id, name, username, password, created_by, updated_by, state, expired_time)
-VALUES (
-  1,
-  'System Administrator',
-  'admin',
-  '$2a$10$tAjbvG5/Z9Ts149obxmokeDTD3MBQ79jGHBDJH/nHCiiuDJvRmWFu', -- Test@123
-  0,
-  0,
-  'Active',
-  NULL
-);
-
--- Assign ADMIN role to admin user
-INSERT IGNORE INTO role_user (user_id, role_id)
-SELECT 1, id FROM roles WHERE code = 'ADMIN' LIMIT 1;
-
 -- Create mapping_domains table
 CREATE TABLE IF NOT EXISTS mapping_domains (
   id INT PRIMARY KEY AUTO_INCREMENT,
@@ -82,7 +62,7 @@ CREATE TABLE IF NOT EXISTS mapping_domains (
   INDEX idx_forward_state (forward_state)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Create api_logs table
+-- Create api_logs table with all columns including duration
 CREATE TABLE IF NOT EXISTS api_logs (
   id INT PRIMARY KEY AUTO_INCREMENT,
   domain_id INT NOT NULL,
@@ -94,7 +74,7 @@ CREATE TABLE IF NOT EXISTS api_logs (
   toCUrl TEXT,
   response_headers TEXT,
   response_body TEXT,
-  duration INT,
+  duration INT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (domain_id) REFERENCES mapping_domains(id) ON DELETE CASCADE,
   INDEX idx_domain_id (domain_id),
@@ -124,3 +104,79 @@ CREATE TABLE IF NOT EXISTS mock_responses (
   INDEX idx_method (method),
   INDEX idx_state (state)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================
+-- Migration: Add missing columns if table exists
+-- These will only run if tables already exist (for existing databases)
+-- ============================================
+
+-- Add duration column to api_logs if it doesn't exist
+-- Note: This uses a stored procedure approach to handle IF NOT EXISTS
+DELIMITER $$
+
+CREATE PROCEDURE IF NOT EXISTS AddColumnIfNotExists(
+    IN tableName VARCHAR(64),
+    IN columnName VARCHAR(64),
+    IN columnDefinition TEXT
+)
+BEGIN
+    DECLARE columnExists INT DEFAULT 0;
+    
+    SELECT COUNT(*) INTO columnExists
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = tableName
+      AND COLUMN_NAME = columnName;
+    
+    IF columnExists = 0 THEN
+        SET @sql = CONCAT('ALTER TABLE ', tableName, ' ADD COLUMN ', columnName, ' ', columnDefinition);
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END$$
+
+DELIMITER ;
+
+-- Add missing columns using the procedure
+CALL AddColumnIfNotExists('api_logs', 'duration', 'INT NULL AFTER response_body');
+CALL AddColumnIfNotExists('api_logs', 'response_headers', 'TEXT AFTER toCUrl');
+CALL AddColumnIfNotExists('api_logs', 'response_body', 'TEXT AFTER response_headers');
+CALL AddColumnIfNotExists('mock_responses', 'name', 'VARCHAR(500) AFTER id');
+
+-- Clean up procedure
+DROP PROCEDURE IF EXISTS AddColumnIfNotExists;
+
+-- ============================================
+-- Insert Initial Data
+-- ============================================
+
+-- Insert default roles
+INSERT IGNORE INTO roles (code, name, path) VALUES
+  ('ADMIN', 'Administrator', '/*'),
+  ('CONFIG_MANAGER', 'Configuration Manager', '/config/*'),
+  ('USER_MANAGER', 'User Manager', '/users/*'),
+  ('VIEWER', 'Viewer', '/view/*');
+
+-- Insert default admin user
+-- Password: Test@123 (bcrypt hashed with 10 rounds)
+-- Hash: $2a$10$tAjbvG5/Z9Ts149obxmokeDTD3MBQ79jGHBDJH/nHCiiuDJvRmWFu
+INSERT IGNORE INTO users (id, name, username, password, created_by, updated_by, state, expired_time)
+VALUES (
+  1,
+  'System Administrator',
+  'admin',
+  '$2a$10$tAjbvG5/Z9Ts149obxmokeDTD3MBQ79jGHBDJH/nHCiiuDJvRmWFu',
+  0,
+  0,
+  'Active',
+  NULL
+);
+
+-- Assign ADMIN role to admin user
+INSERT IGNORE INTO role_user (user_id, role_id)
+SELECT 1, id FROM roles WHERE code = 'ADMIN' LIMIT 1;
+
+-- ============================================
+-- Initialization Complete
+-- ============================================

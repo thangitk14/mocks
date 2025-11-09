@@ -9,15 +9,14 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy application files
+# Copy application files (excluding files in .dockerignore)
+# .env.production will be copied (allowed in .dockerignore)
 COPY . .
 
-# Build argument for API URL (optional - if not set, will use relative paths)
-ARG VITE_API_BASE_URL
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-
-# Build the application
-RUN npm run build
+# Build the application with production mode
+# Vite automatically loads .env.production when --mode production is used
+# Environment variables prefixed with VITE_* will be available in the app
+RUN npm run build -- --mode production
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine

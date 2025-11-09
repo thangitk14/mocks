@@ -4,15 +4,24 @@ import { io } from 'socket.io-client'
 const getSocketURL = () => {
   // If VITE_API_BASE_URL is explicitly set, use it
   if (import.meta.env.VITE_API_BASE_URL) {
+    console.log('[Socket] Using VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
     return import.meta.env.VITE_API_BASE_URL
   }
   
-  // In production, use current origin (will be proxied by nginx)
+  // In production, try to detect Socket URL from current domain
   if (import.meta.env.MODE === 'production') {
-    return window.location.origin
+    const protocol = window.location.protocol
+    const hostname = window.location.hostname
+    
+    // Portal runs on port 8910, Socket service runs on port 3000
+    // Always use port 3000 for Socket service on same host
+    const socketUrl = `${protocol}//${hostname}:3000`
+    console.log('[Socket] Production mode - detected Socket URL:', socketUrl)
+    return socketUrl
   }
   
   // Development fallback
+  console.log('[Socket] Development mode - using localhost:3000')
   return 'http://localhost:3000'
 }
 
