@@ -46,6 +46,19 @@ class MockResponse {
     return rows[0];
   }
 
+  static async findLatestByPath(domainId, path, method) {
+    // Get the latest mock response (most recently created) regardless of state
+    const [rows] = await db.execute(
+      'SELECT * FROM mock_responses WHERE domain_id = ? AND path = ? AND method = ? ORDER BY created_at DESC LIMIT 1',
+      [domainId, path, method]
+    );
+    if (rows[0]) {
+      rows[0].headers = rows[0].headers ? JSON.parse(rows[0].headers) : {};
+      rows[0].body = rows[0].body ? JSON.parse(rows[0].body) : null;
+    }
+    return rows[0];
+  }
+
   static async findByPathAndMethod(domainId, path, method) {
     // Get all mock responses for a path and method (for disabling)
     const [rows] = await db.execute(

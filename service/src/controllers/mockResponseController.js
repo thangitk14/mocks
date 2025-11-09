@@ -51,7 +51,7 @@ const getMockResponseById = async (req, res, next) => {
 
 const getMockResponseByPath = async (req, res, next) => {
   try {
-    const { domainId, path, method } = req.query;
+    const { domainId, path, method, includeAllStates } = req.query;
 
     if (!domainId || !path || !method) {
       throw new AppError({
@@ -61,7 +61,11 @@ const getMockResponseByPath = async (req, res, next) => {
       });
     }
 
-    const mockResponse = await MockResponse.findByPath(domainId, path, method);
+    // If includeAllStates is true, get latest mock regardless of state
+    // Otherwise, only get Active mock (for forward logic)
+    const mockResponse = includeAllStates === 'true'
+      ? await MockResponse.findLatestByPath(domainId, path, method)
+      : await MockResponse.findByPath(domainId, path, method);
 
     res.json({
       success: true,

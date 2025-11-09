@@ -12,8 +12,13 @@ export const mockResponseService = {
     return response.data
   },
 
-  getByPath: async (domainId, path, method) => {
-    const queryParams = new URLSearchParams({ domainId, path, method }).toString()
+  getByPath: async (domainId, path, method, includeAllStates = false) => {
+    const queryParams = new URLSearchParams({ 
+      domainId, 
+      path, 
+      method,
+      ...(includeAllStates && { includeAllStates: 'true' })
+    }).toString()
     const response = await api.get(`/api/mock-responses/path?${queryParams}`)
     return response.data
   },

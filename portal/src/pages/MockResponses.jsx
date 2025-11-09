@@ -53,14 +53,6 @@ function MockResponses() {
     fetchMockResponses()
   }, [domainId])
 
-  const handleBack = () => {
-    const from = location.state?.from
-    if (from === 'dashboard') {
-      navigate('/dashboard')
-    } else {
-      navigate('/mapping-domain')
-    }
-  }
 
   const handleAdd = () => {
     setFormData({
@@ -225,31 +217,42 @@ function MockResponses() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handleBack}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
-          >
-            ← Back
-          </button>
+      {/* Title with Tabs */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">
-            Mock Responses - {domain?.forward_domain || 'Loading...'}
+            {domain?.forward_domain || 'Loading...'}
           </h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate(`/mapping-domain/${domainId}/logs`, { state: location.state })}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-          >
-            Logs
-          </button>
           <button
             onClick={handleAdd}
             className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
           >
             + Add Mock
           </button>
+        </div>
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="flex space-x-8" aria-label="Tabs">
+            <button
+              onClick={() => navigate(`/mapping-domain/${domainId}/logs`, { state: location.state })}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                location.pathname.includes('/logs')
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              Logs
+            </button>
+            <button
+              onClick={() => navigate(`/mapping-domain/${domainId}/mocks`, { state: location.state })}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                location.pathname.includes('/mocks')
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              Mocks
+            </button>
+          </nav>
         </div>
       </div>
 

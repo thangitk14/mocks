@@ -82,7 +82,8 @@ function ApiLogs() {
               path = '/'
             }
             
-            const response = await mockResponseService.getByPath(domainId, path, log.method)
+            // Get latest mock regardless of state to show change state button
+            const response = await mockResponseService.getByPath(domainId, path, log.method, true)
             if (response.data?.mockResponse) {
               mockMap[log.id] = response.data.mockResponse
             }
@@ -337,18 +338,8 @@ function ApiLogs() {
     return <div className="text-center py-8">Loading...</div>
   }
 
-  // Determine back destination based on where user came from
-  const handleBack = () => {
-    const from = location.state?.from
-    if (from === 'dashboard') {
-      navigate('/dashboard')
-    } else {
-      navigate('/mapping-domain')
-    }
-  }
-
-  // Handle quick state change - disable all mocks for this path
-  const handleQuickDisableMock = async (log) => {
+  // Handle quick state change - cycle through states: Active -> Forward -> Disable -> Active
+  const handleQuickChangeState = async (log) => {
     let path = getForwardPath(log.toCUrl)
     if (!path || path === 'N/A') {
       showError('Cannot determine path for this log')
@@ -362,29 +353,48 @@ function ApiLogs() {
     }
 
     try {
-      // Disable all mocks with same path and method
-      await mockResponseService.disableByPathAndMethod(parseInt(domainId), path, log.method)
+      // Get current mock to know current state
+      const currentMock = mockResponses[log.id]
+      if (!currentMock) {
+        showError('No mock found for this log')
+        return
+      }
+
+      // Determine next state: Active -> Forward -> Disable -> Active
+      let newState
+      if (currentMock.state === 'Active') {
+        newState = 'Forward'
+      } else if (currentMock.state === 'Forward') {
+        newState = 'Disable'
+      } else {
+        newState = 'Active'
+      }
+
+      // Update the mock state
+      await mockResponseService.update(currentMock.id, {
+        state: newState
+      })
       
-      // Refresh mock responses for this log
-      const response = await mockResponseService.getByPath(domainId, path, log.method)
-      if (response.data?.mockResponse) {
+      // Fetch updated mock by ID to get latest state (regardless of state)
+      const updatedMockResponse = await mockResponseService.getById(currentMock.id)
+      if (updatedMockResponse.data?.mockResponse) {
+        // Update mock in state with new state
         setMockResponses(prev => ({
           ...prev,
-          [log.id]: response.data.mockResponse
+          [log.id]: updatedMockResponse.data.mockResponse
         }))
       } else {
-        // Remove from mockResponses if no active mock found
-        setMockResponses(prev => {
-          const newState = { ...prev }
-          delete newState[log.id]
-          return newState
-        })
+        // If fetch fails, update manually
+        setMockResponses(prev => ({
+          ...prev,
+          [log.id]: { ...currentMock, state: newState }
+        }))
       }
       
       // Refresh logs to update mock button state
       fetchLogs()
     } catch (error) {
-      showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to disable mock response')
+      showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to change mock state')
     }
   }
 
@@ -526,24 +536,35 @@ function ApiLogs() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handleBack}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
-          >
-            ← Back
-          </button>
-          <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">
-            API Logs - {domain?.forward_domain || 'Loading...'}
-          </h2>
+      {/* Title with Tabs */}
+      <div className="mb-6">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-4">
+          {domain?.forward_domain || 'Loading...'}
+        </h2>
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="flex space-x-8" aria-label="Tabs">
+            <button
+              onClick={() => navigate(`/mapping-domain/${domainId}/logs`, { state: location.state })}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                location.pathname.includes('/logs')
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              Logs
+            </button>
+            <button
+              onClick={() => navigate(`/mapping-domain/${domainId}/mocks`, { state: location.state })}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                location.pathname.includes('/mocks')
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              Mocks
+            </button>
+          </nav>
         </div>
-        <button
-          onClick={() => navigate(`/mapping-domain/${domainId}/mocks`, { state: location.state })}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-        >
-          Mocks
-        </button>
       </div>
 
       {/* Pagination Controls - Top */}
@@ -632,24 +653,24 @@ function ApiLogs() {
                           handleMockClick(log)
                         }}
                         className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                          mockResponses[log.id]
+                          mockResponses[log.id] && mockResponses[log.id].state === 'Active'
                             ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
-                        Mock
+                        {mockResponses[log.id] ? mockResponses[log.id].state : 'Mock'}
                       </button>
                       {mockResponses[log.id] && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleQuickDisableMock(log)
+                            handleQuickChangeState(log)
                           }}
-                          className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
-                          title="Disable all mocks for this path"
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                          title={`Change state: ${mockResponses[log.id]?.state === 'Active' ? 'Active → Forward' : mockResponses[log.id]?.state === 'Forward' ? 'Forward → Disable' : 'Disable → Active'}`}
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                           </svg>
                         </button>
                       )}
