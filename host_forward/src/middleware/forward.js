@@ -246,10 +246,21 @@ const forwardRequest = async (req, res, next) => {
         console.log(`[${requestId}]   Status: ${mockResponse.status_code}`);
         res.status(mockResponse.status_code);
         
-        // Set mock response headers
+        // Disable caching for mock responses to ensure status code 200 is always returned
+        res.removeHeader('ETag');
+        res.removeHeader('Last-Modified');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        
+        // Set mock response headers (but exclude cache-related headers)
         if (mockResponse.headers && typeof mockResponse.headers === 'object') {
+          const cacheHeaders = ['etag', 'last-modified', 'cache-control', 'pragma', 'expires'];
           Object.entries(mockResponse.headers).forEach(([key, value]) => {
-            res.setHeader(key, value);
+            // Skip cache-related headers to prevent 304 responses
+            if (!cacheHeaders.includes(key.toLowerCase())) {
+              res.setHeader(key, value);
+            }
           });
           console.log(`[${requestId}]   Headers:`, JSON.stringify(mockResponse.headers, null, 2));
         }
