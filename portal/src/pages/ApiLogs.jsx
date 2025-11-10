@@ -104,38 +104,32 @@ function ApiLogs() {
     
     // Listen for new API logs - only add if on page 1
     const handleNewLog = (data) => {
-      console.log('[ApiLogs] Received new-api-log event:', data)
       if (data.log) {
         const logDomainId = parseInt(data.log.domain_id)
         const currentDomainId = parseInt(domainId)
-        console.log(`[ApiLogs] Comparing domain_id: ${logDomainId} === ${currentDomainId}`)
         
         if (logDomainId === currentDomainId) {
           // Only add new log if we're on page 1
           if (page === 1) {
-            console.log('[ApiLogs] Adding new log to list:', data.log.id)
             // Add new log to the beginning of the list
             setLogs(prevLogs => {
               // Check if log already exists to avoid duplicates
               const exists = prevLogs.some(log => log.id === data.log.id)
               if (exists) {
-                console.log('[ApiLogs] Log already exists, skipping:', data.log.id)
                 return prevLogs
               }
               // Add new log at the beginning and limit to current limit
               const newLogs = [data.log, ...prevLogs].slice(0, limit)
-              console.log('[ApiLogs] Updated logs list, new count:', newLogs.length)
               // Update total count
               setTotal(prevTotal => prevTotal + 1)
               return newLogs
             })
           } else {
-            console.log('[ApiLogs] Not on page 1, updating total count only')
             // Just update total count if not on page 1
             setTotal(prevTotal => prevTotal + 1)
           }
         } else {
-          console.log(`[ApiLogs] Domain ID mismatch, ignoring log`)
+          
         }
       } else {
         console.warn('[ApiLogs] Received event without log data')
@@ -146,7 +140,6 @@ function ApiLogs() {
     
     // Join domain room after socket is ready
     const handleConnect = () => {
-      console.log('[ApiLogs] Socket connected, joining domain room:', domainId)
       joinDomainRoom(domainId)
     }
     
@@ -269,17 +262,28 @@ function ApiLogs() {
     return null
   }
 
+  // Extract full URL without query string (origin + pathname)
+  const getFullUrlWithoutQuery = (curlCommand) => {
+    const full = getFullUrl(curlCommand)
+    if (!full) return null
+    try {
+      const url = new URL(full)
+      return `${url.origin}${url.pathname}`
+    } catch (e) {
+      // Fallback if URL constructor fails
+      return full.split('?')[0]
+    }
+  }
+
   // Extract forward path from cURL command (path only, not full URL)
   // The cURL already contains the forward path without the mapping prefix
   // Example: from "https://forward-domain.com/api/transaction-service/reward-360/GetMemberProfileAsync"
   // => returns "api/transaction-service/reward-360/GetMemberProfileAsync"
   const getForwardPath = (curlCommand) => {
     if (!curlCommand) {
-      console.log('[getForwardPath] No curlCommand provided')
       return 'N/A'
     }
     if (!domain) {
-      console.log('[getForwardPath] No domain provided')
       return 'N/A'
     }
     // Extract URL from cURL command - match quoted strings that contain http
@@ -327,10 +331,7 @@ function ApiLogs() {
       }
     }
     
-    console.log('[getForwardPath] fullUrl:', fullUrl)
-    
     if (!fullUrl) {
-      console.log('[getForwardPath] No URL found in curlCommand:', curlCommand.substring(0, 200))
       return 'N/A'
     }
     
@@ -950,24 +951,19 @@ function ApiLogs() {
             </div>
             <div className="p-6 overflow-auto flex-1">
               <div className="space-y-4">
-                {/* Full Path Link */}
+                {/* Full Path (no query, non-clickable) */}
                 {selectedLog.toCUrl && (
                   <div className="mb-4 pb-4 border-b dark:border-gray-700">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Full Path
                     </label>
                     {(() => {
-                      const fullUrl = getFullUrl(selectedLog.toCUrl)
+                      const fullUrl = getFullUrlWithoutQuery(selectedLog.toCUrl)
                       if (fullUrl) {
                         return (
-                          <a
-                            href={fullUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline break-all text-sm font-mono"
-                          >
+                          <div className="break-all text-sm font-mono text-gray-800 dark:text-gray-200">
                             {fullUrl}
-                          </a>
+                          </div>
                         )
                       }
                       return (
