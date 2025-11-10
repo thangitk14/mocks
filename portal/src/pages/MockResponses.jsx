@@ -19,7 +19,7 @@ function MockResponses() {
     method: 'GET',
     statusCode: '200',
     delay: '0',
-    headers: '{}',
+    headers: JSON.stringify({ "Content-Type": "application/json" }, null, 2),
     body: '',
     state: 'Active'
   })
@@ -61,7 +61,7 @@ function MockResponses() {
       method: 'GET',
       statusCode: '200',
       delay: '0',
-      headers: '{}',
+      headers: JSON.stringify({ "Content-Type": "application/json" }, null, 2),
       body: '',
       state: 'Active'
     })

@@ -25,7 +25,7 @@ function ApiLogs() {
   const [mockFormData, setMockFormData] = useState({
     statusCode: '',
     delay: '',
-    headers: '',
+    headers: JSON.stringify({ "Content-Type": "application/json" }, null, 2),
     body: '',
     state: 'Active'
   })
@@ -219,6 +219,21 @@ function ApiLogs() {
     if (status >= 300 && status < 400) return 'bg-yellow-100 text-yellow-800'
     if (status >= 400) return 'bg-red-100 text-red-800'
     return 'bg-gray-100 text-gray-800'
+  }
+
+  // Filter out CORS headers (access-control-*)
+  const filterCorsHeaders = (headers) => {
+    if (!headers || typeof headers !== 'object') {
+      return {}
+    }
+    const filtered = {}
+    for (const [key, value] of Object.entries(headers)) {
+      // Skip headers that start with "access-control-" (case insensitive)
+      if (!key.toLowerCase().startsWith('access-control-')) {
+        filtered[key] = value
+      }
+    }
+    return filtered
   }
 
 
@@ -459,14 +474,23 @@ function ApiLogs() {
     const existingMock = mockResponses[log.id]
     
     // Load form data from log or existing mock
+    // Filter out CORS headers before displaying
+    const defaultHeaders = { "Content-Type": "application/json" }
+    let headersToShow = existingMock?.headers 
+      ? filterCorsHeaders(existingMock.headers)
+      : log.responseHeaders 
+      ? filterCorsHeaders(log.responseHeaders)
+      : defaultHeaders
+    
+    // If headers are empty after filtering, use default headers
+    if (Object.keys(headersToShow).length === 0) {
+      headersToShow = defaultHeaders
+    }
+    
     setMockFormData({
       statusCode: existingMock?.status_code?.toString() || log.status?.toString() || '200',
       delay: existingMock?.delay?.toString() || log.duration?.toString() || '0',
-      headers: existingMock?.headers 
-        ? JSON.stringify(existingMock.headers, null, 2)
-        : log.responseHeaders 
-        ? JSON.stringify(log.responseHeaders, null, 2)
-        : '{}',
+      headers: JSON.stringify(headersToShow, null, 2),
       body: existingMock?.body 
         ? (typeof existingMock.body === 'string' ? existingMock.body : JSON.stringify(existingMock.body, null, 2))
         : log.responseBody 
