@@ -229,6 +229,46 @@ function ApiLogs() {
   }
 
 
+  // Extract full URL from cURL command
+  const getFullUrl = (curlCommand) => {
+    if (!curlCommand) {
+      return null
+    }
+    
+    // Normalize the cURL command: remove line continuation backslashes and extra whitespace
+    const normalizedCurl = curlCommand.replace(/\\\s*\n\s*/g, ' ').replace(/\s+/g, ' ')
+    
+    // Method 1: Try to find URL in quoted strings
+    const quotedUrlPattern = /"((?:https?:\/\/[^"]+))"/g
+    let match
+    let lastQuotedUrl = null
+    while ((match = quotedUrlPattern.exec(normalizedCurl)) !== null) {
+      if (match[1].startsWith('http://') || match[1].startsWith('https://')) {
+        lastQuotedUrl = match[1]
+      }
+    }
+    if (lastQuotedUrl) {
+      return lastQuotedUrl
+    }
+    
+    // Method 2: If not found in quoted strings, try to find URL directly
+    const directUrlMatch = normalizedCurl.match(/(https?:\/\/[^\s"']+)/)
+    if (directUrlMatch) {
+      return directUrlMatch[1]
+    }
+    
+    // Method 3: Try to find URL as the last argument
+    const tokens = normalizedCurl.split(/\s+/)
+    for (let i = tokens.length - 1; i >= 0; i--) {
+      const token = tokens[i].replace(/^["']|["']$/g, '')
+      if (token.startsWith('http://') || token.startsWith('https://')) {
+        return token
+      }
+    }
+    
+    return null
+  }
+
   // Extract forward path from cURL command (path only, not full URL)
   // The cURL already contains the forward path without the mapping prefix
   // Example: from "https://forward-domain.com/api/transaction-service/reward-360/GetMemberProfileAsync"
@@ -627,7 +667,7 @@ function ApiLogs() {
                       title={getForwardPath(log.toCUrl)}
                       style={{
                         direction: 'rtl',
-                        maxWidth: '200px',
+                        maxWidth: '300px',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -910,6 +950,32 @@ function ApiLogs() {
             </div>
             <div className="p-6 overflow-auto flex-1">
               <div className="space-y-4">
+                {/* Full Path Link */}
+                {selectedLog.toCUrl && (
+                  <div className="mb-4 pb-4 border-b dark:border-gray-700">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Full Path
+                    </label>
+                    {(() => {
+                      const fullUrl = getFullUrl(selectedLog.toCUrl)
+                      if (fullUrl) {
+                        return (
+                          <a
+                            href={fullUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline break-all text-sm font-mono"
+                          >
+                            {fullUrl}
+                          </a>
+                        )
+                      }
+                      return (
+                        <span className="text-gray-500 dark:text-gray-400 text-sm">N/A</span>
+                      )
+                    })()}
+                  </div>
+                )}
                 {/* Response Headers - Collapsible */}
                 <div>
                   <button
