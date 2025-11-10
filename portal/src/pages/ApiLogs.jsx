@@ -230,8 +230,9 @@ function ApiLogs() {
 
 
   // Extract forward path from cURL command (path only, not full URL)
-  // Example: from "https://mock-3.thangvnnc.io.vn/vietbank/api/transaction-service/reward-360/GetMemberProfileAsync"
-  // with mapping "/vietbank/*" => returns "api/transaction-service/reward-360/GetMemberProfileAsync"
+  // The cURL already contains the forward path without the mapping prefix
+  // Example: from "https://forward-domain.com/api/transaction-service/reward-360/GetMemberProfileAsync"
+  // => returns "api/transaction-service/reward-360/GetMemberProfileAsync"
   const getForwardPath = (curlCommand) => {
     if (!curlCommand) {
       console.log('[getForwardPath] No curlCommand provided')
@@ -241,101 +242,80 @@ function ApiLogs() {
       console.log('[getForwardPath] No domain provided')
       return 'N/A'
     }
-    
     // Extract URL from cURL command - match quoted strings that contain http
     // Handle both single-line and multi-line cURL commands
     let fullUrl = null
     
-    // Try to find URL in quoted strings
-    const urlMatches = curlCommand.match(/"([^"]+)"/g)
-    if (urlMatches && urlMatches.length > 0) {
-      // Find the last match that starts with http:// or https://
-      for (let i = urlMatches.length - 1; i >= 0; i--) {
-        const match = urlMatches[i].replace(/"/g, '')
-        if (match.startsWith('http://') || match.startsWith('https://')) {
-          fullUrl = match
+    // Normalize the cURL command: remove line continuation backslashes and extra whitespace
+    // This helps handle multi-line cURL commands
+    const normalizedCurl = curlCommand.replace(/\\\s*\n\s*/g, ' ').replace(/\s+/g, ' ')
+    
+    // Method 1: Try to find URL in quoted strings (most common case)
+    // Match quoted strings that contain http:// or https://
+    // Use a more robust regex that handles query strings with special characters
+    const quotedUrlPattern = /"((?:https?:\/\/[^"]+))"/g
+    let match
+    let lastQuotedUrl = null
+    while ((match = quotedUrlPattern.exec(normalizedCurl)) !== null) {
+      if (match[1].startsWith('http://') || match[1].startsWith('https://')) {
+        lastQuotedUrl = match[1]
+      }
+    }
+    if (lastQuotedUrl) {
+      fullUrl = lastQuotedUrl
+    }
+    
+    // Method 2: If not found in quoted strings, try to find URL directly (unquoted)
+    if (!fullUrl) {
+      // Find URL that starts with http:// or https:// and continues until space, quote, or end
+      const directUrlMatch = normalizedCurl.match(/(https?:\/\/[^\s"']+)/)
+      if (directUrlMatch) {
+        fullUrl = directUrlMatch[1]
+      }
+    }
+    
+    // Method 3: Try to find URL as the last argument (common pattern in cURL)
+    if (!fullUrl) {
+      // Split by spaces and find the last token that looks like a URL
+      const tokens = normalizedCurl.split(/\s+/)
+      for (let i = tokens.length - 1; i >= 0; i--) {
+        const token = tokens[i].replace(/^["']|["']$/g, '') // Remove surrounding quotes
+        if (token.startsWith('http://') || token.startsWith('https://')) {
+          fullUrl = token
           break
         }
       }
     }
     
-    // If not found in quoted strings, try to find URL directly
-    if (!fullUrl) {
-      const directUrlMatch = curlCommand.match(/(https?:\/\/[^\s"']+)/)
-      if (directUrlMatch) {
-        fullUrl = directUrlMatch[1]
-      }
-    }
+    console.log('[getForwardPath] fullUrl:', fullUrl)
     
     if (!fullUrl) {
       console.log('[getForwardPath] No URL found in curlCommand:', curlCommand.substring(0, 200))
       return 'N/A'
     }
     
-    console.log('[getForwardPath] Found URL:', fullUrl)
-    console.log('[getForwardPath] Domain:', domain)
-    console.log('[getForwardPath] Forward domain:', domain.forward_domain)
-    console.log('[getForwardPath] Mapping path:', domain.path)
-    
     try {
-      // Remove forward domain to get the path
-      const forwardDomain = domain.forward_domain.replace(/\/$/, '')
-      
-      if (fullUrl.startsWith(forwardDomain)) {
-        // Extract path from URL (remove forward domain)
-        let pathWithQuery = fullUrl.substring(forwardDomain.length)
-        
-        // Remove query string if exists
-        const queryIndex = pathWithQuery.indexOf('?')
-        let path = queryIndex >= 0 ? pathWithQuery.substring(0, queryIndex) : pathWithQuery
-        
-        console.log('[getForwardPath] Path after removing domain:', path)
-        
-        // Remove mapping path prefix from domain.path
-        let mappingPath = domain.path
-        if (mappingPath.endsWith('/*')) {
-          // For wildcard mapping, remove the base path (e.g., /vietbank from /vietbank/*)
-          mappingPath = mappingPath.slice(0, -1) // Remove * to get /vietbank
-        }
-        
-        console.log('[getForwardPath] Mapping path (processed):', mappingPath)
-        
-        // Remove mapping prefix from path
-        // Handle both /vietbank and /vietbank/ cases
-        if (path.startsWith(mappingPath)) {
-          path = path.substring(mappingPath.length)
-        } else if (mappingPath.endsWith('/') && path.startsWith(mappingPath.slice(0, -1))) {
-          // Handle case where mappingPath ends with / but path doesn't
-          path = path.substring(mappingPath.length - 1)
-        }
-        
-        // Remove leading slash to get relative path (e.g., /api/... => api/...)
-        path = path.replace(/^\//, '')
-        
-        console.log('[getForwardPath] Final path:', path)
-        return path || '/'
-      }
-      
-      // If domain doesn't match, try to extract path from URL object
-      console.log('[getForwardPath] Domain mismatch, trying URL object')
+      // Parse URL to get pathname
       const url = new URL(fullUrl)
       let path = url.pathname
       
-      // Remove mapping path prefix
-      let mappingPath = domain.path
-      if (mappingPath.endsWith('/*')) {
-        mappingPath = mappingPath.slice(0, -1)
+      // Remove query string if it's still in pathname (shouldn't be, but just in case)
+      const queryIndex = path.indexOf('?')
+      if (queryIndex >= 0) {
+        path = path.substring(0, queryIndex)
       }
-      if (path.startsWith(mappingPath)) {
-        path = path.substring(mappingPath.length)
-      }
+      
+      // The forward path in cURL already has the mapping prefix removed by curlGenerator.js
+      // So we just need to extract the path and remove leading slash
+      // Remove leading slash to get relative path (e.g., /api/... => api/...)
       path = path.replace(/^\//, '')
       
-      console.log('[getForwardPath] Final path (fallback):', path)
+      // Return the path, or '/' if empty
       return path || '/'
     } catch (e) {
-      console.error('[getForwardPath] Error:', e)
-      // If URL parsing fails, try to extract path manually
+      console.error('[getForwardPath] Error parsing URL:', e)
+      
+      // Fallback: try to extract path manually
       const forwardDomain = domain.forward_domain.replace(/\/$/, '')
       if (fullUrl.startsWith(forwardDomain)) {
         let path = fullUrl.substring(forwardDomain.length)
@@ -346,23 +326,15 @@ function ApiLogs() {
           path = path.substring(0, queryIndex)
         }
         
-        // Remove mapping path prefix
-        let mappingPath = domain.path
-        if (mappingPath.endsWith('/*')) {
-          mappingPath = mappingPath.slice(0, -1)
-        }
-        if (path.startsWith(mappingPath)) {
-          path = path.substring(mappingPath.length)
-        }
+        // Remove leading slash
         path = path.replace(/^\//, '')
         
-        console.log('[getForwardPath] Final path (error fallback):', path)
         return path || '/'
       }
+      
       console.error('[getForwardPath] All extraction methods failed')
+      return 'N/A'
     }
-    
-    return 'N/A'
   }
 
   if (loading) {
