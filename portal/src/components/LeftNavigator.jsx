@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 
 function LeftNavigator({ onToggle }) {
-  const { hasPermission } = useAuth()
+  const { hasPermission, user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const location = useLocation()
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -164,8 +164,25 @@ function LeftNavigator({ onToggle }) {
           </li>
         )}
       </ul>
-      {/* Theme Toggle Button at Bottom */}
-      <div className="mt-auto pt-4 border-t border-gray-300 dark:border-gray-600 flex-shrink-0">
+      {/* Bottom Section: Copyright, Logout, Theme Toggle */}
+      <div className="mt-auto pt-4 border-t border-gray-300 dark:border-gray-600 flex-shrink-0 space-y-2">
+        {/* Copyright */}
+        <div className="text-center text-xs text-gray-500 dark:text-gray-400 pb-2">
+          Copyright by thangtp
+        </div>
+        {/* Logout Button */}
+        {user && (
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded transition text-sm md:text-base text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>Logout</span>
+          </button>
+        )}
+        {/* Theme Toggle Button */}
         <button
           onClick={toggleTheme}
           className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded transition text-sm md:text-base text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
