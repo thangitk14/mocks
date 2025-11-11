@@ -11,6 +11,7 @@ import Functions from './pages/Functions'
 import MappingDomain from './pages/MappingDomain'
 import ApiLogs from './pages/ApiLogs'
 import MockResponses from './pages/MockResponses'
+import ChangePassword from './pages/ChangePassword'
 import ErrorDialog from './components/ErrorDialog'
 import { ErrorProvider } from './contexts/ErrorContext'
 import { ConfirmProvider } from './contexts/ConfirmContext'
@@ -43,6 +44,7 @@ function AppRoutes() {
         <Route path="role-user" element={<RoleUser />} />
         <Route path="users" element={<Users />} />
         <Route path="functions" element={<Functions />} />
+        <Route path="change-password" element={<ChangePassword />} />
         <Route path="mapping-domain" element={<MappingDomain />} />
         <Route path="mapping-domain/:domainId/logs" element={<ApiLogs />} />
         <Route path="mapping-domain/:domainId/mocks" element={<MockResponses />} />

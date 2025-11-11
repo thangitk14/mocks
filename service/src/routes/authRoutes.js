@@ -22,9 +22,17 @@ const loginValidation = [
   validate
 ];
 
+const changePasswordValidation = [
+  body('currentPassword').notEmpty().withMessage('Current password is required'),
+  body('newPassword').notEmpty().withMessage('New password is required')
+    .isLength({ min: 6 }).withMessage('New password must be at least 6 characters'),
+  validate
+];
+
 // Routes
 router.post('/register', registerValidation, authController.register);
 router.post('/login', loginValidation, authController.login);
 router.get('/profile', authenticate, authController.getProfile);
+router.post('/change-password', authenticate, changePasswordValidation, authController.changePassword);
 
 module.exports = router;

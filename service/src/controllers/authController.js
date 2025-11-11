@@ -112,8 +112,41 @@ const getProfile = async (req, res, next) => {
   }
 };
 
+const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    // Get user with password
+    const user = await User.findByUsername(req.user.username);
+    if (!user) {
+      throw new AppError(ERROR_CODES.USER_NOT_FOUND);
+    }
+
+    // Verify current password
+    const isPasswordValid = await User.verifyPassword(currentPassword, user.password);
+    if (!isPasswordValid) {
+      throw new AppError(ERROR_CODES.INVALID_CREDENTIALS);
+    }
+
+    // Update password
+    await User.update(userId, {
+      password: newPassword,
+      updated_by: userId
+    });
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
-  getProfile
+  getProfile,
+  changePassword
 };

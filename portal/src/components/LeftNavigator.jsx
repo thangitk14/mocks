@@ -41,7 +41,12 @@ function LeftNavigator({ onToggle }) {
     {
       path: '/functions',
       label: 'Functions',
-      permission: null, // No permission required
+      permission: '/config/*', // No permission required
+    },
+    {
+      path: '/change-password',
+      label: 'Change Password',
+      permission: null, // No permission required - user can change their own password
     },
   ]
 
