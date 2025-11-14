@@ -167,7 +167,13 @@ services:
         # Disable Let's Encrypt in GitLab (nginx gateway handles it)
         letsencrypt['enable'] = false
         # GitLab will run behind nginx proxy
-        gitlab_rails['trusted_proxies'] = ['172.16.0.0/12', '192.168.0.0/16']
+        gitlab_rails['trusted_proxies'] = ['172.16.0.0/12', '192.168.0.0/16', '10.0.0.0/8']
+        # Allow requests from local network
+        gitlab_rails['trusted_proxy_ips'] = ['172.16.0.0/12', '192.168.0.0/16', '10.0.0.0/8']
+        # Ensure GitLab uses the correct URL for API and Git operations
+        gitlab_rails['gitlab_url'] = 'https://${GITLAB_DOMAIN:-gitlab.thangvnnc.io.vn}'
+        # Configure SSH host for Git operations
+        gitlab_rails['gitlab_ssh_host'] = '${GITLAB_DOMAIN:-gitlab.thangvnnc.io.vn}'
     ports:
       # SSH port for Git operations (optional, can be removed if not needed)
       - "${GITLAB_SSH_PORT:-2222}:22"
