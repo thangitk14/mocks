@@ -10,6 +10,7 @@ DOMAINS=(
     "fw.thangvnnc.io.vn"
     "tp.thangvnnc.io.vn"
     "sv.thangvnnc.io.vn"
+    "gitlab.thangvnnc.io.vn"
 )
 
 PRIVATE_IP="0.0.0.0"
