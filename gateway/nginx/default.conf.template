@@ -1,7 +1,151 @@
-# HTTP server - redirect to HTTPS and handle ACME challenge
+# HTTP server for Host Forward - redirect to HTTPS and handle ACME challenge
 server {
     listen 80;
-    server_name ${HOST_FORWARD_DOMAIN} www.${HOST_FORWARD_DOMAIN} ${PORTAL_DOMAIN} www.${PORTAL_DOMAIN} ${SERVICE_DOMAIN} www.${SERVICE_DOMAIN} static.thangvnnc.io.vn cp.thangvnnc.io.vn it.thangvnnc.io.vn codepush.thangvnnc.io.vn minio-api.thangvnnc.io.vn minio-console.thangvnnc.io.vn 2fa.thangvnnc.io.vn;
+    server_name ${HOST_FORWARD_DOMAIN} www.${HOST_FORWARD_DOMAIN};
+
+    # Allow Let's Encrypt ACME challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Redirect all other HTTP traffic to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTP server for Portal - redirect to HTTPS and handle ACME challenge
+server {
+    listen 80;
+    server_name ${PORTAL_DOMAIN} www.${PORTAL_DOMAIN};
+
+    # Allow Let's Encrypt ACME challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Redirect all other HTTP traffic to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTP server for Service - redirect to HTTPS and handle ACME challenge
+server {
+    listen 80;
+    server_name ${SERVICE_DOMAIN} www.${SERVICE_DOMAIN};
+
+    # Allow Let's Encrypt ACME challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Redirect all other HTTP traffic to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTP server for Static/Netlify - redirect to HTTPS and handle ACME challenge
+server {
+    listen 80;
+    server_name static.thangvnnc.io.vn;
+
+    # Allow Let's Encrypt ACME challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Redirect all other HTTP traffic to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTP server for CodePush Admin - redirect to HTTPS and handle ACME challenge
+server {
+    listen 80;
+    server_name cp.thangvnnc.io.vn;
+
+    # Allow Let's Encrypt ACME challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Redirect all other HTTP traffic to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTP server for IT Tools - redirect to HTTPS and handle ACME challenge
+server {
+    listen 80;
+    server_name it.thangvnnc.io.vn;
+
+    # Allow Let's Encrypt ACME challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Redirect all other HTTP traffic to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTP server for 2FAuth - redirect to HTTPS and handle ACME challenge
+server {
+    listen 80;
+    server_name 2fa.thangvnnc.io.vn;
+
+    # Allow Let's Encrypt ACME challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Redirect all other HTTP traffic to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTP server for CodePush Server - redirect to HTTPS and handle ACME challenge
+server {
+    listen 80;
+    server_name codepush.thangvnnc.io.vn;
+
+    # Allow Let's Encrypt ACME challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Redirect all other HTTP traffic to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTP server for MinIO API - redirect to HTTPS and handle ACME challenge
+server {
+    listen 80;
+    server_name minio-api.thangvnnc.io.vn;
+
+    # Allow Let's Encrypt ACME challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Redirect all other HTTP traffic to HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTP server for MinIO Console - redirect to HTTPS and handle ACME challenge
+server {
+    listen 80;
+    server_name minio-console.thangvnnc.io.vn;
 
     # Allow Let's Encrypt ACME challenge
     location /.well-known/acme-challenge/ {
