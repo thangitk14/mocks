@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Script to backup Docker data only (no source code)
-# Alpine 3.14 compatible - supports MariaDB Alpine images
-# MariaDB 10.11-alpine is fully MySQL-compatible and works on older CPUs
+# Alpine 3.14 compatible - supports MySQL Oracle Linux 8 images
+# MySQL 8.4.0-oraclelinux8 is CPU-compatible (no x86-64-v2 requirement)
 # Usage: ./commands/backup-all.sh [backup-name]
 
 set -e
@@ -27,7 +27,7 @@ PROJECT_NAME="mocks"
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Docker Data Backup Script${NC}"
-echo -e "${GREEN}(MariaDB Alpine - CPU Compatible)${NC}"
+echo -e "${GREEN}(MySQL Oracle Linux 8 - CPU Compatible)${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 
@@ -152,18 +152,18 @@ Backup Date: $(date)
 Hostname: $(hostname)
 Docker Version: $(docker --version 2>/dev/null || echo "Docker not running")
 Docker Compose Version: $(docker-compose --version 2>/dev/null || echo "Not installed")
-Database: MariaDB 10.11-alpine (MySQL-compatible, CPU compatible)
+Database: MySQL 8.4.0-oraclelinux8 (CPU compatible, no x86-64-v2 requirement)
 
 Backed up components (Docker data only):
 - Docker Compose configuration (docker-compose.yml)
 - Environment files (.env.*)
-- Docker volumes (MariaDB data, SSL certificates)
-- MariaDB database dump (SQL export)
+- Docker volumes (MySQL data, SSL certificates)
+- MySQL database dump (SQL export)
 
 NOTE: Source code is NOT included in this backup.
 The source code should be managed via Git repository.
 NOTE: GitLab is DISABLED and not backed up.
-NOTE: Using MariaDB Alpine for better CPU compatibility (no x86-64-v2 requirement)
+NOTE: Using MySQL Oracle Linux 8 for better CPU compatibility
 
 To restore this backup on another machine:
 1. Ensure source code is already deployed on target machine (via Git)
@@ -183,11 +183,11 @@ echo -e "Backup location: ${BACKUP_DIR}"
 echo -e "Size: ${BACKUP_SIZE}"
 echo ""
 echo -e "${YELLOW}What was backed up:${NC}"
-echo "- Docker volumes (MariaDB data, SSL certs)"
-echo "- MariaDB database dump (MySQL-compatible)"
+echo "- Docker volumes (MySQL data, SSL certs)"
+echo "- MySQL database dump"
 echo "- docker-compose.yml and .env files"
 echo ""
-echo -e "${GREEN}NOTE: Using MariaDB Alpine (no CPU compatibility issues)${NC}"
+echo -e "${GREEN}NOTE: Using MySQL Oracle Linux 8 (no CPU compatibility issues)${NC}"
 echo -e "${GREEN}NOTE: GitLab is disabled (not backed up)${NC}"
 echo ""
 echo -e "${YELLOW}Next steps to restore on another machine:${NC}"
