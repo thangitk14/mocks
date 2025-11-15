@@ -41,6 +41,9 @@ request_certificate() {
     fi
 }
 
+# Define all domains that need certificates
+ADDITIONAL_DOMAINS="static.thangvnnc.io.vn cp.thangvnnc.io.vn it.thangvnnc.io.vn codepush.thangvnnc.io.vn minio-api.thangvnnc.io.vn minio-console.thangvnnc.io.vn 2fa.thangvnnc.io.vn"
+
 # Check if certificates exist for all domains
 HOST_FORWARD_CERT_EXISTS=false
 PORTAL_CERT_EXISTS=false
@@ -62,13 +65,24 @@ if [ -f "/etc/letsencrypt/live/${SERVICE_DOMAIN}/fullchain.pem" ]; then
     echo "Certificate found for ${SERVICE_DOMAIN}"
 fi
 
+# Check additional domains
+ADDITIONAL_CERTS_EXIST=true
+for domain in ${ADDITIONAL_DOMAINS}; do
+    if [ ! -f "/etc/letsencrypt/live/${domain}/fullchain.pem" ]; then
+        ADDITIONAL_CERTS_EXIST=false
+        echo "Certificate not found for ${domain}"
+    else
+        echo "Certificate found for ${domain}"
+    fi
+done
+
 # if [ -f "/etc/letsencrypt/live/${GITLAB_DOMAIN}/fullchain.pem" ]; then
 #     GITLAB_CERT_EXISTS=true
 #     echo "Certificate found for ${GITLAB_DOMAIN}"
 # fi
 
 # If certificates don't exist, start in HTTP-only mode
-if [ "$HOST_FORWARD_CERT_EXISTS" = false ] || [ "$PORTAL_CERT_EXISTS" = false ] || [ "$SERVICE_CERT_EXISTS" = false ]; then
+if [ "$HOST_FORWARD_CERT_EXISTS" = false ] || [ "$PORTAL_CERT_EXISTS" = false ] || [ "$SERVICE_CERT_EXISTS" = false ] || [ "$ADDITIONAL_CERTS_EXIST" = false ]; then
     echo "Some certificates not found. Starting nginx in HTTP-only mode for initial certificate generation..."
 
     # Create HTTP-only config for certificate generation
@@ -108,6 +122,21 @@ if [ "$HOST_FORWARD_CERT_EXISTS" = false ] || [ "$PORTAL_CERT_EXISTS" = false ] 
         fi
     fi
 
+    # Request certificates for additional domains
+    for domain in ${ADDITIONAL_DOMAINS}; do
+        if [ ! -f "/etc/letsencrypt/live/${domain}/fullchain.pem" ]; then
+            request_certificate ${domain}
+        fi
+    done
+
+    # Recheck if all additional certificates exist
+    ADDITIONAL_CERTS_EXIST=true
+    for domain in ${ADDITIONAL_DOMAINS}; do
+        if [ ! -f "/etc/letsencrypt/live/${domain}/fullchain.pem" ]; then
+            ADDITIONAL_CERTS_EXIST=false
+        fi
+    done
+
     # if [ "$GITLAB_CERT_EXISTS" = false ]; then
     #     request_certificate ${GITLAB_DOMAIN}
     #     if [ -f "/etc/letsencrypt/live/${GITLAB_DOMAIN}/fullchain.pem" ]; then
@@ -116,7 +145,7 @@ if [ "$HOST_FORWARD_CERT_EXISTS" = false ] || [ "$PORTAL_CERT_EXISTS" = false ] 
     # fi
 
     # If certificates were generated, update nginx config
-    if [ "$HOST_FORWARD_CERT_EXISTS" = true ] && [ "$PORTAL_CERT_EXISTS" = true ] && [ "$SERVICE_CERT_EXISTS" = true ]; then
+    if [ "$HOST_FORWARD_CERT_EXISTS" = true ] && [ "$PORTAL_CERT_EXISTS" = true ] && [ "$SERVICE_CERT_EXISTS" = true ] && [ "$ADDITIONAL_CERTS_EXIST" = true ]; then
         echo "Updating nginx config with SSL..."
         # Replace with full SSL config
         envsubst '${HOST_FORWARD_DOMAIN} ${PORTAL_DOMAIN} ${SERVICE_DOMAIN}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
@@ -137,6 +166,9 @@ if [ "$HOST_FORWARD_CERT_EXISTS" = false ] || [ "$PORTAL_CERT_EXISTS" = false ] 
         echo "  docker-compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${HOST_FORWARD_DOMAIN}"
         echo "  docker-compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${PORTAL_DOMAIN}"
         echo "  docker-compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${SERVICE_DOMAIN}"
+        for domain in ${ADDITIONAL_DOMAINS}; do
+            echo "  docker-compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${domain}"
+        done
         # echo "  docker-compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${GITLAB_DOMAIN}"
     fi
 else
