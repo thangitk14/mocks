@@ -5,41 +5,41 @@ help: ## Hiển thị hướng dẫn các commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 up: ## Chạy tất cả services (foreground)
-	docker-compose up
+	docker compose up
 
 up-d: ## Chạy tất cả services (background)
-	docker-compose up -d
+	docker compose up -d
 
 down: ## Dừng tất cả services
-	docker-compose down
+	docker compose down
 
 down-v: ## Dừng services và XÓA volumes (XÓA DATABASE!)
-	docker-compose down -v
+	docker compose down -v
 
 build: ## Build lại images
-	docker-compose build
+	docker compose build
 
 rebuild: ## Build lại images (no cache) và restart
-	docker-compose build --no-cache
-	docker-compose up -d
+	docker compose build --no-cache
+	docker compose up -d
 
 restart: ## Restart tất cả services
-	docker-compose restart
+	docker compose restart
 
 restart-service: ## Restart chỉ Node.js service
-	docker-compose restart service
+	docker compose restart service
 
 logs: ## Xem logs tất cả services
-	docker-compose logs -f
+	docker compose logs -f
 
 logs-service: ## Xem logs Node.js service
-	docker-compose logs -f service
+	docker compose logs -f service
 
 logs-mysql: ## Xem logs MySQL
-	docker-compose logs -f mysql
+	docker compose logs -f mysql
 
 ps: ## Xem containers đang chạy
-	docker-compose ps
+	docker compose ps
 
 shell-service: ## Truy cập shell của service container
 	docker exec -it service_app sh
@@ -51,7 +51,7 @@ mysql-cli: ## Kết nối MySQL CLI
 	docker exec -it service_mysql mysql -uroot -pTest@123 service_dev
 
 clean: ## Xóa containers, images, volumes (CẢNH BÁO: XÓA TẤT CẢ!)
-	docker-compose down -v
+	docker compose down -v
 	docker system prune -f
 
 backup-db: ## Backup database
@@ -64,6 +64,6 @@ test: ## Test API health check
 
 status: ## Kiểm tra status của services
 	@echo "=== Docker Compose Status ==="
-	@docker-compose ps
+	@docker compose ps
 	@echo "\n=== Resource Usage ==="
 	@docker stats --no-stream service_app service_mysql

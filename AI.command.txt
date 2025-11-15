@@ -565,13 +565,13 @@ Client → GET /vietbank/api/users → Host Forward (Port 80)
 ### Build and Start
 ```bash
 # Development
-docker-compose --env-file .env.developer up -d
+docker compose --env-file .env.developer up -d
 
 # Production
-docker-compose --env-file .env.production up -d
+docker compose --env-file .env.production up -d
 
 # Or use default .env
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Rebuild Database
@@ -587,12 +587,12 @@ docker-compose up -d
 ### View Logs
 ```bash
 # All services
-docker-compose logs -f
+docker compose logs -f
 
 # Specific service
-docker-compose logs -f host_forward
-docker-compose logs -f mock_service
-docker-compose logs -f portal
+docker compose logs -f host_forward
+docker compose logs -f mock_service
+docker compose logs -f portal
 ```
 
 ### Access URLs (Production)
@@ -669,7 +669,7 @@ Mỗi request có **Request ID** duy nhất để trace:
 
 1. **Start Services**
    ```bash
-   docker-compose --env-file .env.production up -d
+   docker compose --env-file .env.production up -d
    ```
 
 2. **Login to Portal** (http://fw.thangvnnc.io.vn:8910)

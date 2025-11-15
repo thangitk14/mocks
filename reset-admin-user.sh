@@ -16,7 +16,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Get database credentials from docker-compose or use defaults
+# Get database credentials from docker compose or use defaults
 DB_NAME="${DB_NAME:-service_dev}"
 DB_USER="${DB_USER:-root}"
 DB_PASSWORD="${DB_PASSWORD:-Test@123}"
@@ -31,9 +31,9 @@ echo "  User: $DB_USER"
 echo ""
 
 # Check if MySQL container is running
-if ! docker-compose ps | grep -q "mock_service_mysql"; then
+if ! docker compose ps | grep -q "mock_service_mysql"; then
     echo -e "${RED}MySQL container is not running.${NC}"
-    echo "Please start MySQL first: docker-compose up -d mock_mysql"
+    echo "Please start MySQL first: docker compose up -d mock_mysql"
     exit 1
 fi
 
@@ -43,7 +43,7 @@ echo -e "${YELLOW}Resetting admin user...${NC}"
 # Password hash for 'Test@123': $2a$10$tAjbvG5/Z9Ts149obxmokeDTD3MBQ79jGHBDJH/nHCiiuDJvRmWFu
 ADMIN_PASSWORD_HASH='$2a$10$tAjbvG5/Z9Ts149obxmokeDTD3MBQ79jGHBDJH/nHCiiuDJvRmWFu'
 
-docker-compose exec -T mock_mysql mysql -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" <<EOF
+docker compose exec -T mock_mysql mysql -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" <<EOF
 -- Update or insert admin user
 INSERT INTO users (id, name, username, password, created_by, updated_by, state, expired_time)
 VALUES (

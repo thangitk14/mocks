@@ -46,23 +46,23 @@ PUBLIC_GATEWAY_HTTPS_PORT=443
 
 ```bash
 # Stop gateway container
-docker-compose stop gateway_nginx
+docker compose stop gateway_nginx
 
 # Remove old container
-docker-compose rm -f gateway_nginx
+docker compose rm -f gateway_nginx
 
 # Rebuild and start with production config
-docker-compose --env-file .env.production up -d --build gateway_nginx
+docker compose --env-file .env.production up -d --build gateway_nginx
 ```
 
 ### Bước 2: Kiểm tra logs
 
 ```bash
 # Xem logs của gateway
-docker-compose logs -f gateway_nginx
+docker compose logs -f gateway_nginx
 
 # Kiểm tra xem nginx config có được generate đúng không
-docker-compose exec gateway_nginx cat /etc/nginx/conf.d/default.conf
+docker compose exec gateway_nginx cat /etc/nginx/conf.d/default.conf
 ```
 
 ### Bước 3: Kiểm tra SSL certificates
@@ -71,10 +71,10 @@ Gateway sẽ tự động request SSL certificates cho tất cả các domain kh
 
 ```bash
 # Kiểm tra danh sách certificates
-docker-compose exec gateway_nginx ls -la /etc/letsencrypt/live/
+docker compose exec gateway_nginx ls -la /etc/letsencrypt/live/
 
 # Kiểm tra certificate cho từng domain
-docker-compose exec gateway_nginx certbot certificates
+docker compose exec gateway_nginx certbot certificates
 ```
 
 ### Bước 4: Test từng domain
@@ -105,12 +105,12 @@ Kiểm tra xem mỗi domain có route đến đúng service không:
 
 ```bash
 # Kiểm tra logs của từng service khi truy cập domain
-docker-compose logs -f 2fauth
-docker-compose logs -f netlify
-docker-compose logs -f codepushadmin
-docker-compose logs -f it
-docker-compose logs -f codepush_server
-docker-compose logs -f minio
+docker compose logs -f 2fauth
+docker compose logs -f netlify
+docker compose logs -f codepushadmin
+docker compose logs -f it
+docker compose logs -f codepush_server
+docker compose logs -f minio
 ```
 
 ## Troubleshooting
@@ -133,12 +133,12 @@ curl http://2fa.thangvnnc.io.vn/.well-known/acme-challenge/test
 
 3. Kiểm tra rate limit của Let's Encrypt:
 ```bash
-docker-compose exec gateway_nginx certbot certificates
+docker compose exec gateway_nginx certbot certificates
 ```
 
 4. Request certificate manually:
 ```bash
-docker-compose exec gateway_nginx certbot certonly \
+docker compose exec gateway_nginx certbot certonly \
   --webroot \
   --webroot-path=/var/www/certbot \
   -d 2fa.thangvnnc.io.vn \
@@ -151,17 +151,17 @@ docker-compose exec gateway_nginx certbot certonly \
 
 1. Kiểm tra nginx config:
 ```bash
-docker-compose exec gateway_nginx nginx -t
+docker compose exec gateway_nginx nginx -t
 ```
 
 2. Kiểm tra server blocks:
 ```bash
-docker-compose exec gateway_nginx grep -A 10 "server_name 2fa" /etc/nginx/conf.d/default.conf
+docker compose exec gateway_nginx grep -A 10 "server_name 2fa" /etc/nginx/conf.d/default.conf
 ```
 
 3. Reload nginx:
 ```bash
-docker-compose exec gateway_nginx nginx -s reload
+docker compose exec gateway_nginx nginx -s reload
 ```
 
 ### Lỗi: 502 Bad Gateway
@@ -170,14 +170,14 @@ Service backend chưa chạy hoặc không accessible:
 
 ```bash
 # Kiểm tra status của tất cả containers
-docker-compose ps
+docker compose ps
 
 # Start service nếu chưa chạy
-docker-compose up -d 2fauth netlify codepushadmin it codepush_server minio
+docker compose up -d 2fauth netlify codepushadmin it codepush_server minio
 
 # Kiểm tra network connectivity
-docker-compose exec gateway_nginx ping 2fauth
-docker-compose exec gateway_nginx ping netlify
+docker compose exec gateway_nginx ping 2fauth
+docker compose exec gateway_nginx ping netlify
 ```
 
 ## Các file cấu hình quan trọng
@@ -194,11 +194,11 @@ Certificates sẽ tự động renew thông qua cron job được setup trong en
 
 ```bash
 # Kiểm tra cron job
-docker-compose exec gateway_nginx crontab -l
+docker compose exec gateway_nginx crontab -l
 
 # Manual renewal
-docker-compose exec gateway_nginx certbot renew --dry-run
-docker-compose exec gateway_nginx certbot renew
+docker compose exec gateway_nginx certbot renew --dry-run
+docker compose exec gateway_nginx certbot renew
 ```
 
 ## Production Deployment Checklist

@@ -2,7 +2,7 @@ version: '3.8'
 
 # Load environment variables from .env file
 # Use .env.developer for development or .env.production for production
-# Example: docker-compose --env-file .env.production up
+# Example: docker compose --env-file .env.production up
 
 services:
   # MySQL Database (Oracle Linux 8 - CPU compatible)

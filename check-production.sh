@@ -58,7 +58,7 @@ fi
 if [ -f "service/.env.production" ]; then
     check_pass "service/.env.production exists"
 else
-    check_warn "service/.env.production not found (using docker-compose env vars)"
+    check_warn "service/.env.production not found (using docker compose env vars)"
 fi
 
 echo ""
@@ -101,15 +101,15 @@ fi
 
 echo ""
 
-# 4. Check docker-compose ports
-echo "4. Checking docker-compose.yml ports..."
-if grep -qE '"0\.0\.0\.0:8910:80"' docker-compose.yml; then
+# 4. Check docker compose ports
+echo "4. Checking docker compose.yml ports..."
+if grep -qE '"0\.0\.0\.0:8910:80"' docker compose.yml; then
     check_pass "Portal port 8910 is exposed"
 else
     check_fail "Portal port 8910 might not be exposed"
 fi
 
-if grep -qE '"0\.0\.0\.0:80:4000"' docker-compose.yml; then
+if grep -qE '"0\.0\.0\.0:80:4000"' docker compose.yml; then
     check_pass "Host Forward port 80 is exposed"
 else
     check_fail "Host Forward port 80 might not be exposed"
@@ -130,7 +130,7 @@ else
     check_fail "Docker is not installed"
 fi
 
-if command -v docker-compose &> /dev/null || docker compose version &> /dev/null; then
+if command -v docker compose &> /dev/null || docker compose version &> /dev/null; then
     check_pass "Docker Compose is available"
 else
     check_fail "Docker Compose is not available"
@@ -174,8 +174,8 @@ echo ""
 echo "Next steps:"
 echo "1. Fix any issues marked with ✗"
 echo "2. Review warnings marked with ⚠"
-echo "3. Run: docker-compose build --no-cache"
-echo "4. Run: docker-compose up -d"
+echo "3. Run: docker compose build --no-cache"
+echo "4. Run: docker compose up -d"
 echo "5. Test: curl http://localhost:8910/health"
 echo "6. Test: curl http://localhost/health"
 

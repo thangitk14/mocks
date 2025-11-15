@@ -163,13 +163,13 @@ if [ "$HOST_FORWARD_CERT_EXISTS" = false ] || [ "$PORTAL_CERT_EXISTS" = false ] 
     else
         echo "Not all certificates are available. Continuing with HTTP-only mode..."
         echo "You can manually request certificates later using:"
-        echo "  docker-compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${HOST_FORWARD_DOMAIN}"
-        echo "  docker-compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${PORTAL_DOMAIN}"
-        echo "  docker-compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${SERVICE_DOMAIN}"
+        echo "  docker compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${HOST_FORWARD_DOMAIN}"
+        echo "  docker compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${PORTAL_DOMAIN}"
+        echo "  docker compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${SERVICE_DOMAIN}"
         for domain in ${ADDITIONAL_DOMAINS}; do
-            echo "  docker-compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${domain}"
+            echo "  docker compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${domain}"
         done
-        # echo "  docker-compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${GITLAB_DOMAIN}"
+        # echo "  docker compose exec gateway_nginx certbot certonly --webroot --webroot-path=/var/www/certbot -d ${GITLAB_DOMAIN}"
     fi
 else
     echo "All certificates found. Starting nginx with SSL..."

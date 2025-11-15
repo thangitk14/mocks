@@ -80,18 +80,18 @@ Nếu vẫn gặp vấn đề:
 
 3. **Kiểm tra GitLab logs**:
    ```bash
-   docker-compose logs gitlab_ce | tail -50
+   docker compose logs gitlab_ce | tail -50
    ```
 
 4. **Kiểm tra nginx logs**:
    ```bash
-   docker-compose logs gateway_nginx | tail -50
+   docker compose logs gateway_nginx | tail -50
    ```
 
 5. **Reset GitLab configuration** (nếu cần):
    ```bash
-   docker-compose restart gitlab_ce
-   docker-compose exec gitlab_ce gitlab-ctl reconfigure
+   docker compose restart gitlab_ce
+   docker compose exec gitlab_ce gitlab-ctl reconfigure
    ```
 
 ## Lưu ý

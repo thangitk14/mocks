@@ -151,7 +151,7 @@ Backup Name: ${BACKUP_NAME}
 Backup Date: $(date)
 Hostname: $(hostname)
 Docker Version: $(docker --version 2>/dev/null || echo "Docker not running")
-Docker Compose Version: $(docker-compose --version 2>/dev/null || echo "Not installed")
+Docker Compose Version: $(docker compose version 2>/dev/null || echo "Not installed")
 Database: MySQL 8.4.0-oraclelinux8 (CPU compatible, no x86-64-v2 requirement)
 
 Backed up components (Docker data only):

@@ -193,7 +193,7 @@ fi
 
 #     if [ "$RESTORE_GITLAB" = "yes" ]; then
 #         echo -e "${YELLOW}Starting GitLab...${NC}"
-#         docker-compose up -d gitlab_ce
+#         docker compose up -d gitlab_ce
 
 #         echo "  - Waiting for GitLab to be ready (this may take 2-3 minutes)..."
 #         sleep 30
