@@ -160,7 +160,7 @@ server {
 
 # HTTPS server for Host Forward
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
     server_name ${HOST_FORWARD_DOMAIN} www.${HOST_FORWARD_DOMAIN};
 
     # SSL certificate paths
@@ -210,7 +210,7 @@ server {
 
 # HTTPS server for Portal
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
     server_name ${PORTAL_DOMAIN} www.${PORTAL_DOMAIN};
 
     # SSL certificate paths
@@ -311,7 +311,7 @@ server {
 
 # HTTPS server for Service (Backend API)
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
     server_name ${SERVICE_DOMAIN} www.${SERVICE_DOMAIN};
 
     # SSL certificate paths
@@ -459,7 +459,7 @@ server {
 
 # HTTPS server for Static/Netlify
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
     server_name static.thangvnnc.io.vn;
 
     ssl_certificate /etc/letsencrypt/live/static.thangvnnc.io.vn/fullchain.pem;
@@ -496,7 +496,7 @@ server {
 
 # HTTPS server for CodePush Admin
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
     server_name cp.thangvnnc.io.vn;
 
     ssl_certificate /etc/letsencrypt/live/cp.thangvnnc.io.vn/fullchain.pem;
@@ -533,7 +533,7 @@ server {
 
 # HTTPS server for IT Tools
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
     server_name it.thangvnnc.io.vn;
 
     ssl_certificate /etc/letsencrypt/live/it.thangvnnc.io.vn/fullchain.pem;
@@ -570,7 +570,7 @@ server {
 
 # HTTPS server for 2FAuth
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
     server_name 2fa.thangvnnc.io.vn;
 
     ssl_certificate /etc/letsencrypt/live/2fa.thangvnnc.io.vn/fullchain.pem;
@@ -605,7 +605,7 @@ server {
 
 # HTTPS server for CodePush Server
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
     server_name codepush.thangvnnc.io.vn;
 
     ssl_certificate /etc/letsencrypt/live/codepush.thangvnnc.io.vn/fullchain.pem;
@@ -649,7 +649,7 @@ upstream minio-console {
 
 # HTTPS server for MinIO API
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
     server_name minio-api.thangvnnc.io.vn;
 
     ssl_certificate /etc/letsencrypt/live/minio-api.thangvnnc.io.vn/fullchain.pem;
@@ -684,7 +684,7 @@ server {
 
 # HTTPS server for MinIO Console
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
     server_name minio-console.thangvnnc.io.vn;
 
     ssl_certificate /etc/letsencrypt/live/minio-console.thangvnnc.io.vn/fullchain.pem;
@@ -725,7 +725,7 @@ server {
 # Default HTTPS server - catch all unmatched domains
 # This prevents fallback to host_forward when certificate is missing or domain doesn't match
 server {
-    listen 443 ssl http2 default_server;
+    listen 443 ssl default_server;
     server_name _;
 
     # Use HOST_FORWARD_DOMAIN certificate as fallback (must exist)
