@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Script to backup Docker data only (no source code)
-# Alpine 3.14 compatible - supports MySQL/MariaDB Alpine images
+# Alpine 3.14 compatible - supports MariaDB Alpine images
+# MariaDB 10.11-alpine is fully MySQL-compatible and works on older CPUs
 # Usage: ./commands/backup-all.sh [backup-name]
 
 set -e
@@ -26,7 +27,7 @@ PROJECT_NAME="mocks"
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Docker Data Backup Script${NC}"
-echo -e "${GREEN}(Volumes, Databases, Configurations)${NC}"
+echo -e "${GREEN}(MariaDB Alpine - CPU Compatible)${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 
@@ -151,16 +152,18 @@ Backup Date: $(date)
 Hostname: $(hostname)
 Docker Version: $(docker --version 2>/dev/null || echo "Docker not running")
 Docker Compose Version: $(docker-compose --version 2>/dev/null || echo "Not installed")
+Database: MariaDB 10.11-alpine (MySQL-compatible, CPU compatible)
 
 Backed up components (Docker data only):
 - Docker Compose configuration (docker-compose.yml)
 - Environment files (.env.*)
-- Docker volumes (MySQL data, SSL certificates)
-- MySQL database dump (SQL export)
+- Docker volumes (MariaDB data, SSL certificates)
+- MariaDB database dump (SQL export)
 
 NOTE: Source code is NOT included in this backup.
 The source code should be managed via Git repository.
 NOTE: GitLab is DISABLED and not backed up.
+NOTE: Using MariaDB Alpine for better CPU compatibility (no x86-64-v2 requirement)
 
 To restore this backup on another machine:
 1. Ensure source code is already deployed on target machine (via Git)
@@ -180,10 +183,11 @@ echo -e "Backup location: ${BACKUP_DIR}"
 echo -e "Size: ${BACKUP_SIZE}"
 echo ""
 echo -e "${YELLOW}What was backed up:${NC}"
-echo "- Docker volumes (MySQL data, SSL certs)"
-echo "- MySQL database dump"
+echo "- Docker volumes (MariaDB data, SSL certs)"
+echo "- MariaDB database dump (MySQL-compatible)"
 echo "- docker-compose.yml and .env files"
 echo ""
+echo -e "${GREEN}NOTE: Using MariaDB Alpine (no CPU compatibility issues)${NC}"
 echo -e "${GREEN}NOTE: GitLab is disabled (not backed up)${NC}"
 echo ""
 echo -e "${YELLOW}Next steps to restore on another machine:${NC}"

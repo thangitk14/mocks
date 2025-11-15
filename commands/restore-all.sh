@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Script to restore Docker data only (no source code)
-# Alpine 3.14 compatible - supports MySQL/MariaDB Alpine images
+# Alpine 3.14 compatible - supports MariaDB Alpine images
+# MariaDB 10.11-alpine is fully MySQL-compatible and works on older CPUs
 # Usage: ./commands/restore-all.sh <backup-name>
 # Example: ./commands/restore-all.sh backup-20231115-143022
 
@@ -35,7 +36,7 @@ fi
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Docker Data Restore Script${NC}"
-echo -e "${GREEN}(Volumes, Databases, Configurations)${NC}"
+echo -e "${GREEN}(MariaDB Alpine - CPU Compatible)${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 
@@ -138,14 +139,16 @@ docker compose up -d mock_mysql mock_service gateway_nginx host_forward portal
 echo "  - Waiting for MySQL to be ready..."
 sleep 10
 
-# Check MySQL health (Alpine-compatible)
+# Check MySQL/MariaDB health (Alpine-compatible)
 MYSQL_READY=false
 for i in {1..30}; do
-    if docker exec mock_service_mysql sh -c "mysqladmin ping -h localhost -uroot -p'${DB_PASSWORD:-Test@123}' --silent" 2>/dev/null; then
+    # Try healthcheck.sh first (MariaDB Alpine), fallback to mysqladmin
+    if docker exec mock_service_mysql healthcheck.sh --connect --innodb_initialized 2>/dev/null || \
+       docker exec mock_service_mysql sh -c "mysqladmin ping -h localhost -uroot -p'${DB_PASSWORD:-Test@123}' --silent" 2>/dev/null; then
         MYSQL_READY=true
         break
     fi
-    echo "    Waiting for MySQL... ($i/30)"
+    echo "    Waiting for MySQL/MariaDB... ($i/30)"
     sleep 2
 done
 

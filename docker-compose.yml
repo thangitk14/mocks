@@ -5,22 +5,23 @@ version: '3.8'
 # Example: docker-compose --env-file .env.production up
 
 services:
-  # MySQL Database
+  # MySQL Database (MariaDB Alpine for better CPU compatibility)
   mock_mysql:
-    image: mysql:8.0
+    image: mariadb:10.11-alpine
     platform: linux/amd64
     container_name: mock_service_mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-Test@123}
       MYSQL_DATABASE: ${DB_NAME:-service_dev}
+      MARIADB_AUTO_UPGRADE: 1
     ports:
       - "3306:3306"
     volumes:
       - mock_mysql_data:/var/lib/mysql
       - ./service/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD:-Test@123}"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
       timeout: 5s
       retries: 5
