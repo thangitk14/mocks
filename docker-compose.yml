@@ -80,7 +80,7 @@ services:
       HOST_FORWARD_DOMAIN: ${HOST_FORWARD_DOMAIN:-fw.thangvnnc.io.vn}
       PORTAL_DOMAIN: ${PORTAL_DOMAIN:-tp.thangvnnc.io.vn}
       SERVICE_DOMAIN: ${SERVICE_DOMAIN:-sv.thangvnnc.io.vn}
-      GITLAB_DOMAIN: ${GITLAB_DOMAIN:-gitlab.thangvnnc.io.vn}
+      # GITLAB_DOMAIN: ${GITLAB_DOMAIN:-gitlab.thangvnnc.io.vn}
       CERTBOT_EMAIL: ${CERTBOT_EMAIL:-thangvnnc@gmail.com}
       # Default values
       PUBLIC_GATEWAY_HTTP_PORT: ${PUBLIC_GATEWAY_HTTP_PORT:-80}
@@ -93,7 +93,7 @@ services:
     depends_on:
       - host_forward
       - portal
-      - gitlab_ce
+      # - gitlab_ce
     networks:
       - mock_service_network
     command: nginx -g "daemon off;"
@@ -145,45 +145,45 @@ services:
     networks:
       - mock_service_network
 
-  # GitLab CE (Self-hosted GitLab)
-  gitlab_ce:
-    image: gitlab/gitlab-ce:latest
-    container_name: gitlab_ce
-    restart: unless-stopped
-    hostname: ${GITLAB_DOMAIN:-gitlab.thangvnnc.io.vn}
-    environment:
-      GITLAB_OMNIBUS_CONFIG: |
-        external_url 'https://${GITLAB_DOMAIN:-gitlab.thangvnnc.io.vn}'
-        nginx['listen_port'] = 80
-        nginx['listen_https'] = false
-        # Let nginx gateway handle SSL termination
-        nginx['proxy_set_headers'] = {
-          "Host" => "$http_host",
-          "X-Real-IP" => "$remote_addr",
-          "X-Forwarded-For" => "$proxy_add_x_forwarded_for",
-          "X-Forwarded-Proto" => "https",
-          "X-Forwarded-Ssl" => "on"
-        }
-        # Disable Let's Encrypt in GitLab (nginx gateway handles it)
-        letsencrypt['enable'] = false
-        # GitLab will run behind nginx proxy
-        gitlab_rails['trusted_proxies'] = ['172.16.0.0/12', '192.168.0.0/16', '10.0.0.0/8']
-        # Allow requests from local network
-        gitlab_rails['trusted_proxy_ips'] = ['172.16.0.0/12', '192.168.0.0/16', '10.0.0.0/8']
-        # Ensure GitLab uses the correct URL for API and Git operations
-        gitlab_rails['gitlab_url'] = 'https://${GITLAB_DOMAIN:-gitlab.thangvnnc.io.vn}'
-        # Configure SSH host for Git operations
-        gitlab_rails['gitlab_ssh_host'] = '${GITLAB_DOMAIN:-gitlab.thangvnnc.io.vn}'
-    ports:
-      # SSH port for Git operations (optional, can be removed if not needed)
-      - "${GITLAB_SSH_PORT:-2222}:22"
-    volumes:
-      - gitlab_config:/etc/gitlab
-      - gitlab_logs:/var/log/gitlab
-      - gitlab_data:/var/opt/gitlab
-    networks:
-      - mock_service_network
-    shm_size: '256m'
+  # # GitLab CE (Self-hosted GitLab)
+  # gitlab_ce:
+  #   image: gitlab/gitlab-ce:latest
+  #   container_name: gitlab_ce
+  #   restart: unless-stopped
+  #   hostname: ${GITLAB_DOMAIN:-gitlab.thangvnnc.io.vn}
+  #   environment:
+  #     GITLAB_OMNIBUS_CONFIG: |
+  #       external_url 'https://${GITLAB_DOMAIN:-gitlab.thangvnnc.io.vn}'
+  #       nginx['listen_port'] = 80
+  #       nginx['listen_https'] = false
+  #       # Let nginx gateway handle SSL termination
+  #       nginx['proxy_set_headers'] = {
+  #         "Host" => "$http_host",
+  #         "X-Real-IP" => "$remote_addr",
+  #         "X-Forwarded-For" => "$proxy_add_x_forwarded_for",
+  #         "X-Forwarded-Proto" => "https",
+  #         "X-Forwarded-Ssl" => "on"
+  #       }
+  #       # Disable Let's Encrypt in GitLab (nginx gateway handles it)
+  #       letsencrypt['enable'] = false
+  #       # GitLab will run behind nginx proxy
+  #       gitlab_rails['trusted_proxies'] = ['172.16.0.0/12', '192.168.0.0/16', '10.0.0.0/8']
+  #       # Allow requests from local network
+  #       gitlab_rails['trusted_proxy_ips'] = ['172.16.0.0/12', '192.168.0.0/16', '10.0.0.0/8']
+  #       # Ensure GitLab uses the correct URL for API and Git operations
+  #       gitlab_rails['gitlab_url'] = 'https://${GITLAB_DOMAIN:-gitlab.thangvnnc.io.vn}'
+  #       # Configure SSH host for Git operations
+  #       gitlab_rails['gitlab_ssh_host'] = '${GITLAB_DOMAIN:-gitlab.thangvnnc.io.vn}'
+  #   ports:
+  #     # SSH port for Git operations (optional, can be removed if not needed)
+  #     - "${GITLAB_SSH_PORT:-2222}:22"
+  #   volumes:
+  #     - gitlab_config:/etc/gitlab
+  #     - gitlab_logs:/var/log/gitlab
+  #     - gitlab_data:/var/opt/gitlab
+  #   networks:
+  #     - mock_service_network
+  #   shm_size: '256m'
 
 volumes:
   mock_mysql_data:
@@ -192,12 +192,12 @@ volumes:
     driver: local
   certbot_gateway_www:
     driver: local
-  gitlab_config:
-    driver: local
-  gitlab_logs:
-    driver: local
-  gitlab_data:
-    driver: local
+  # gitlab_config:
+  #   driver: local
+  # gitlab_logs:
+  #   driver: local
+  # gitlab_data:
+  #   driver: local
 
 networks:
   mock_service_network:

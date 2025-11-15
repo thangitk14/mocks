@@ -195,42 +195,42 @@ server {
     }
 }
 
-# HTTP-only server for GitLab
-server {
-    listen 80;
-    server_name ${GITLAB_DOMAIN} www.${GITLAB_DOMAIN};
+# # HTTP-only server for GitLab (DISABLED)
+# server {
+#     listen 80;
+#     server_name ${GITLAB_DOMAIN} www.${GITLAB_DOMAIN};
 
-    # Allow Let's Encrypt ACME challenge
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
+#     # Allow Let's Encrypt ACME challenge
+#     location /.well-known/acme-challenge/ {
+#         root /var/www/certbot;
+#     }
 
-    # Proxy settings for GitLab
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection 'upgrade';
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-Host $host;
-    proxy_set_header X-Forwarded-Ssl off;
-    proxy_cache_bypass $http_upgrade;
-    
-    # GitLab requires longer timeouts for large file uploads and operations
-    proxy_read_timeout 300s;
-    proxy_connect_timeout 75s;
-    proxy_send_timeout 300s;
-    
-    # Increase client body size for large file uploads
-    client_max_body_size 0;
-    
-    # Disable buffering for better performance with GitLab
-    proxy_buffering off;
-    proxy_request_buffering off;
+#     # Proxy settings for GitLab
+#     proxy_http_version 1.1;
+#     proxy_set_header Upgrade $http_upgrade;
+#     proxy_set_header Connection 'upgrade';
+#     proxy_set_header Host $host;
+#     proxy_set_header X-Real-IP $remote_addr;
+#     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#     proxy_set_header X-Forwarded-Proto $scheme;
+#     proxy_set_header X-Forwarded-Host $host;
+#     proxy_set_header X-Forwarded-Ssl off;
+#     proxy_cache_bypass $http_upgrade;
 
-    # Forward all requests to GitLab
-    location / {
-        proxy_pass http://gitlab_ce:80;
-    }
-}
+#     # GitLab requires longer timeouts for large file uploads and operations
+#     proxy_read_timeout 300s;
+#     proxy_connect_timeout 75s;
+#     proxy_send_timeout 300s;
+
+#     # Increase client body size for large file uploads
+#     client_max_body_size 0;
+
+#     # Disable buffering for better performance with GitLab
+#     proxy_buffering off;
+#     proxy_request_buffering off;
+
+#     # Forward all requests to GitLab
+#     location / {
+#         proxy_pass http://gitlab_ce:80;
+#     }
+# }
