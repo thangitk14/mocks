@@ -75,9 +75,10 @@ else
         for volume in $VOLUMES; do
             echo "  - Backing up volume: ${volume}..."
             docker run --rm \
+                --platform linux/amd64 \
                 -v "${volume}:/source:ro" \
                 -v "$(pwd)/${BACKUP_DIR}/volumes:/backup" \
-                alpine \
+                alpine:3.14 \
                 tar czf "/backup/${volume}.tar.gz" -C /source .
         done
         echo "  - All volumes backed up"

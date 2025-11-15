@@ -1,4 +1,4 @@
-FROM nginx:alpine
+FROM nginx:1.24-alpine3.17
 
 # Install certbot and cron
 RUN apk add --no-cache certbot certbot-nginx dcron

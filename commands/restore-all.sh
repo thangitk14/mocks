@@ -112,9 +112,10 @@ if [ -d "${BACKUP_DIR}/volumes" ]; then
             echo "  - Restoring volume: ${volume_name}..."
 
             docker run --rm \
+                --platform linux/amd64 \
                 -v "${volume_name}:/target" \
                 -v "$(pwd)/${BACKUP_DIR}/volumes:/backup" \
-                alpine \
+                alpine:3.14 \
                 sh -c "rm -rf /target/* /target/..?* /target/.[!.]* 2>/dev/null || true && tar xzf /backup/${volume_name}.tar.gz -C /target"
         fi
     done

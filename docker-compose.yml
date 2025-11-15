@@ -8,6 +8,7 @@ services:
   # MySQL Database
   mock_mysql:
     image: mysql:8.0
+    platform: linux/amd64
     container_name: mock_service_mysql
     restart: unless-stopped
     environment:
