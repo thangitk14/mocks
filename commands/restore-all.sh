@@ -72,7 +72,7 @@ fi
 
 # 1. Stop and remove existing containers
 echo -e "${YELLOW}Stopping and removing existing containers...${NC}"
-docker-compose down -v 2>/dev/null || true
+docker compose down -v 2>/dev/null || true
 
 # 2. Restore docker-compose.yml
 echo -e "${YELLOW}Restoring docker-compose.yml...${NC}"
@@ -130,7 +130,7 @@ docker network create mock_service_network 2>/dev/null || true
 # 6. Start services (without GitLab first for faster startup)
 echo -e "${YELLOW}Starting services...${NC}"
 echo "  - Starting core services (MySQL, Service, Gateway, Host Forward, Portal)..."
-docker-compose up -d mock_mysql mock_service gateway_nginx host_forward portal
+docker compose up -d mock_mysql mock_service gateway_nginx host_forward portal
 
 # Wait for MySQL to be ready
 echo "  - Waiting for MySQL to be ready..."
@@ -221,7 +221,7 @@ fi
 # 9. Display service status
 echo ""
 echo -e "${YELLOW}Checking service status...${NC}"
-docker-compose ps
+docker compose ps
 
 # 10. Create restore log
 echo -e "${YELLOW}Creating restore log...${NC}"
@@ -240,11 +240,11 @@ NOTE: Source code was NOT restored from backup.
 NOTE: GitLab is DISABLED and not restored.
 
 Service Status:
-$(docker-compose ps)
+$(docker compose ps)
 
 Next steps:
-1. Verify all services are running: docker-compose ps
-2. Check service logs: docker-compose logs -f
+1. Verify all services are running: docker compose ps
+2. Check service logs: docker compose logs -f
 3. Test the application endpoints
 4. Update DNS/hosts file if on a different machine
 5. Renew SSL certificates if needed: docker exec mock_gateway_nginx certbot renew
@@ -264,8 +264,8 @@ echo -e "${GREEN}NOTE: Source code was NOT restored (managed via Git)${NC}"
 echo -e "${GREEN}NOTE: GitLab is disabled (not restored)${NC}"
 echo ""
 echo -e "${YELLOW}Next steps:${NC}"
-echo "1. Check service status: docker-compose ps"
-echo "2. View logs: docker-compose logs -f"
+echo "1. Check service status: docker compose ps"
+echo "2. View logs: docker compose logs -f"
 echo "3. Test application endpoints"
 echo ""
 echo -e "${YELLOW}If you restored on a different machine:${NC}"
