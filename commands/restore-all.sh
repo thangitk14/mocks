@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Script to restore Docker data only (no source code)
+# Alpine 3.14 compatible - supports MySQL/MariaDB Alpine images
 # Usage: ./commands/restore-all.sh <backup-name>
 # Example: ./commands/restore-all.sh backup-20231115-143022
 
@@ -137,10 +138,10 @@ docker compose up -d mock_mysql mock_service gateway_nginx host_forward portal
 echo "  - Waiting for MySQL to be ready..."
 sleep 10
 
-# Check MySQL health
+# Check MySQL health (Alpine-compatible)
 MYSQL_READY=false
 for i in {1..30}; do
-    if docker exec mock_service_mysql mysqladmin ping -h localhost -uroot -p"${DB_PASSWORD:-Test@123}" --silent 2>/dev/null; then
+    if docker exec mock_service_mysql sh -c "mysqladmin ping -h localhost -uroot -p'${DB_PASSWORD:-Test@123}' --silent" 2>/dev/null; then
         MYSQL_READY=true
         break
     fi
@@ -153,7 +154,7 @@ if [ "$MYSQL_READY" = false ]; then
 else
     echo -e "${GREEN}  - MySQL is ready${NC}"
 
-    # 7. Restore MySQL database from SQL dump (if exists)
+    # 7. Restore MySQL database from SQL dump (Alpine-compatible)
     if [ -f "${BACKUP_DIR}/database/all-databases.sql" ]; then
         echo -e "${YELLOW}Restoring MySQL database from SQL dump...${NC}"
 
@@ -166,11 +167,15 @@ else
 
         DB_PASSWORD=${DB_PASSWORD:-Test@123}
 
-        docker exec -i mock_service_mysql mysql \
-            -uroot -p"${DB_PASSWORD}" \
+        # Get MySQL image from running container
+        MYSQL_IMAGE=$(docker inspect mock_service_mysql --format='{{.Config.Image}}' 2>/dev/null || echo "mysql:8.0")
+
+        # Use Alpine-compatible restore method
+        docker exec -i mock_service_mysql sh -c "mysql \
+            -uroot -p'${DB_PASSWORD}'" \
             < "${BACKUP_DIR}/database/all-databases.sql"
 
-        echo -e "${GREEN}  - MySQL database restored from SQL dump${NC}"
+        echo -e "${GREEN}  - MySQL database restored from SQL dump (Image: ${MYSQL_IMAGE})${NC}"
     else
         echo -e "${YELLOW}  - No SQL dump found. Using data from volume backup.${NC}"
     fi

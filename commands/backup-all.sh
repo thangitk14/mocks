@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Script to backup Docker data only (no source code)
+# Alpine 3.14 compatible - supports MySQL/MariaDB Alpine images
 # Usage: ./commands/backup-all.sh [backup-name]
 
 set -e
@@ -86,7 +87,7 @@ else
         echo "  - No volumes found to backup"
     fi
 
-    # 5. Backup MySQL database
+    # 5. Backup MySQL database (Alpine-compatible)
     echo -e "${YELLOW}Backing up MySQL database...${NC}"
     mkdir -p "${BACKUP_DIR}/database"
 
@@ -104,15 +105,19 @@ else
         DB_PASSWORD=${DB_PASSWORD:-Test@123}
         DB_NAME=${DB_NAME:-service_dev}
 
-        docker exec mock_service_mysql mysqldump \
-            -uroot -p"${DB_PASSWORD}" \
+        # Get MySQL image from running container
+        MYSQL_IMAGE=$(docker inspect mock_service_mysql --format='{{.Config.Image}}' 2>/dev/null || echo "mysql:8.0")
+
+        # Use Alpine-compatible dump method
+        docker exec mock_service_mysql sh -c "mysqldump \
+            -uroot -p'${DB_PASSWORD}' \
             --all-databases \
             --single-transaction \
             --quick \
-            --lock-tables=false \
+            --lock-tables=false" \
             > "${BACKUP_DIR}/database/all-databases.sql" 2>/dev/null
 
-        echo "  - MySQL database exported successfully"
+        echo "  - MySQL database exported successfully (Image: ${MYSQL_IMAGE})"
     else
         echo -e "${YELLOW}  - MySQL container not running. Skipping database dump.${NC}"
         echo -e "${YELLOW}  - Database will be restored from volume backup.${NC}"
