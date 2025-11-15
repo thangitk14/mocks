@@ -731,3 +731,24 @@ server {
         root /var/www/certbot;
     }
 }
+
+# Default HTTPS server - catch all unmatched domains
+# This prevents fallback to host_forward when certificate is missing or domain doesn't match
+server {
+    listen 443 ssl default_server;
+    http2 on;
+    server_name _;
+
+    # Use HOST_FORWARD_DOMAIN certificate as fallback (must exist)
+    # This is only used when no other server block matches
+    ssl_certificate /etc/letsencrypt/live/${HOST_FORWARD_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${HOST_FORWARD_DOMAIN}/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+    ssl_prefer_server_ciphers off;
+
+    # Return 444 (connection closed) for unmatched domains
+    # This prevents fallback to host_forward service
+    return 444;
+}
