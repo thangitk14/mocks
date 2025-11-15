@@ -1,0 +1,43 @@
+<div class="col-12 mt-4">
+  <h5 class="mb-3">Deployment Info</h5>
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Name</th>
+          <th>Upload Time</th>
+          <th>Version</th>
+          <th>Label</th>
+          <th>Mandatory</th>
+          <th>Rollout</th>
+          <th>Disabled</th>
+          <th>Size (MB)</th>
+          <th>Release By</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% deployments.forEach((dep, index) => { %>
+          <tr>
+            <td><%= dep.name %></td>
+            <td>
+              <%= dep.package?.uploadTime ? moment(dep.package.uploadTime).format('HH:mm:ss DD/MM/YYYY') : '-' %>
+            </td>
+            <% if (dep.package) { %>
+              <td><%= dep.package.appVersion %></td>
+              <td><%= dep.package.label %></td>
+              <td><%= dep.package.isMandatory ? 'Yes' : 'No' %></td>
+              <td><%= dep.package.rollout %></td>
+              <td><%= dep.package.isDisabled ? 'Yes' : 'No' %></td>
+              <td><%= (dep.package.size / 1024 / 1024).toFixed(2) %> MB</td>
+              <td><%= dep.package.releasedBy %></td>
+              <td><a href="./deployments/<%= encodeURIComponent(dep.name) %>/history">History</a></td>
+            <% } else { %>
+              <td colspan="7" class="text-muted text-center">Empty</td>
+            <% } %>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,20 @@
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.DS_Store
+bin/
+certbot/
+.nyc_output/
+
+# deps
+node_modules/
+
+
+# vs code
+.history
+.idea

@@ -1,0 +1,18 @@
+<% if (host) { %>
+<nav class="navbar navbar-expand-lg navbar-light bg-light px-4 position-relative">
+  <!-- Trái: Home -->
+  <a href="/" class="navbar-brand h4 mb-0 text-decoration-none">
+    🏠 Home
+  </a>
+
+  <!-- Giữa: Host -->
+  <div class="position-absolute top-50 start-50 translate-middle">
+    <span class="fw-semibold"><%= host %></span>
+  </div>
+
+  <!-- Phải: Sign out -->
+  <form class="ms-auto" action="/auth/signout" method="POST">
+    <button type="submit" class="btn btn-outline-danger">Sign out</button>
+  </form>
+</nav>
+<% } %>

@@ -1,0 +1,52 @@
+<div class="col-12 mt-4">
+  <h5 class="mb-3">Deployment History</h5>
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Upload Time</th>
+          <th>Version</th>
+          <th>Label</th>
+          <th>Mandatory</th>
+          <th>Rollout</th>
+          <th>Disabled</th>
+          <th>Size (MB)</th>
+          <th>Release By</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (history) { %>
+          <% history.forEach((pkg, index)=> { %>
+            <tr>
+              <td>
+                <%= pkg.uploadTime ? moment(pkg.uploadTime).format('HH:mm:ss DD/MM/YYYY') : '-' %>
+              </td>              
+              <td>
+                <%= pkg.appVersion %>
+              </td>
+              <td>
+                <%= pkg.label %>
+              </td>
+              <td>
+                <%= pkg.isMandatory ? 'Yes' : 'No' %> <a
+                    href="./mandatory/<%= pkg.label %>/<%= !pkg.isMandatory %>">Change</a>
+              </td>
+              <td>
+                <%= pkg.rollout %>
+              </td>
+              <td>
+                <%= pkg.isDisabled ? 'Yes' : 'No' %>
+              </td>
+              <td>
+                <%= (pkg.size / 1024 / 1024).toFixed(2) %> MB
+              </td>
+              <td>
+                <%= pkg.releasedBy %>
+              </td>
+            </tr>
+            <% }) %>
+              <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>

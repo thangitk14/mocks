@@ -1,0 +1,114 @@
+<style>
+  @media (max-width: 576px) {
+    .input-group .btn {
+      font-size: 0.875rem;
+      padding: 0.375rem 0.5rem;
+    }
+
+    .table td,
+    .table th {
+      white-space: nowrap;
+    }
+  }
+</style>
+<div class="row justify-content-center px-2">
+  <div class="col-12 col-md-6">
+    <div class="mb-3">
+      <label class="form-label">Access Key</label>
+      <div class="input-group">
+        <input class="form-control" id="accessKeyInput" value="<%- accessKey?.name %>" readonly type="password" />
+        <button class="btn btn-outline-secondary" type="button" id="toggleAccessKey">Show</button>
+        <button class="btn btn-outline-primary" type="button" id="copyAccessKey">Copy</button>
+      </div>
+    </div>
+
+    <% if (typeof errorAccessKey !=='undefined' && errorAccessKey) { %>
+      <div class="alert alert-danger">
+        <%= errorAccessKey %>
+      </div>
+      <% } %>
+  </div>
+
+  <div class="col-12 mt-4">
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+          <tr>
+            <th>Group</th>
+            <th>OS</th>
+            <th>Platform</th>
+            <th>Deployments</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% const groups={}; apps.forEach(app=> {
+            const groupName = app.name.replace(/-iOS|-Android/i, '');
+            if (!groups[groupName]) groups[groupName] = [];
+            groups[groupName].push(app);
+            });
+
+            Object.keys(groups).forEach(groupName => {
+            const groupApps = groups[groupName];
+            groupApps.forEach((app, index) => {
+            %>
+            <tr>
+              <% if (index===0) { %>
+                <td rowspan="<%= groupApps.length %>"><strong>
+                    <%= groupName %>
+                  </strong></td>
+                <% } %>
+                  <td>
+                    <%= app.os %>
+                  </td>
+                  <td>
+                    <%= app.platform %>
+                  </td>
+                  <td>
+                    <% app.deployments.forEach((dep, i)=> { %>
+                      <a href="/apps/<%= app.name %>/deployments/<%= dep %>/history">
+                        <%= dep %>
+                      </a>
+                      <%= i < app.deployments.length - 1 ? ', ' : '' %>
+                        <% }) %>
+                  </td>
+                  <td>
+                    <a href="/apps/<%= app.name %>/deployments" class="btn btn-sm btn-outline-primary">Show Detail</a>
+                  </td>
+            </tr>
+            <% }) }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+  const input = document.getElementById("accessKeyInput");
+  const toggleBtn = document.getElementById("toggleAccessKey");
+  const copyBtn = document.getElementById("copyAccessKey");
+
+  // Mặc định là ẩn (password), nút hiển thị là Show
+  toggleBtn.addEventListener("click", () => {
+    if (input.type === "password") {
+      input.type = "text";
+      toggleBtn.textContent = "Hide";
+    } else {
+      input.type = "password";
+      toggleBtn.textContent = "Show";
+    }
+  });
+
+  copyBtn.addEventListener("click", () => {
+    // Tạm thời chuyển sang text nếu đang bị ẩn để copy được
+    const wasPassword = input.type === "password";
+    if (wasPassword) input.type = "text";
+
+    input.select();
+    document.execCommand("copy");
+
+    if (wasPassword) input.type = "password";
+
+    copyBtn.textContent = "Copied!";
+    setTimeout(() => copyBtn.textContent = "Copy", 1500);
+  });
+</script>

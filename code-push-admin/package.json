@@ -1,0 +1,21 @@
+{
+  "name": "minio-nodejs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.10.0",
+    "dotenv": "^17.0.1",
+    "ejs": "^3.1.10",
+    "ejs-lint": "^2.0.1",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "minio": "^8.0.5",
+    "moment": "^2.30.1"
+  }
+}

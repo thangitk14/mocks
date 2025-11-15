@@ -1,0 +1,35 @@
+<h1 class="text-center mb-4">Sign In</h1>
+
+<div class="row justify-content-center">
+  <div class="col-12 col-sm-10 col-md-6 col-lg-4 px-3">
+    <form action="/auth/signin" method="POST" class="border p-4 rounded shadow bg-white">
+      <div class="mb-3">
+        <label for="host" class="form-label">Host</label>
+        <select name="host" id="host" class="form-select" required>
+          <!-- <option value="https://mock-1.thangvnnc.io.vn">https://mock-1.thangvnnc.io.vn</option> -->
+          <option value="https://codepush.thangvnnc.io.vn">https://codepush.thangvnnc.io.vn</option>
+          <option value="https://codepush.akachains.io">https://codepush.akachains.io</option>
+          <option value="https://codepush.maisonjsc.com">MAISON_PROD</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" name="username" id="username" class="form-control"
+          placeholder="Enter your username" required />
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" name="password" id="password" class="form-control"
+          placeholder="Enter your password" required />
+      </div>
+
+      <% if (error) { %>
+        <div class="alert alert-danger"><%= error %></div>
+      <% } %>
+
+      <button type="submit" class="btn btn-primary w-100">Login</button>
+    </form>
+  </div>
+</div>

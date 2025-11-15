@@ -1,0 +1,61 @@
+version: '3.7'
+services:
+  server:
+    image: shmopen/code-push-server:latest
+    volumes:
+      - data-storage:/data/storage
+      - data-tmp:/data/tmp
+    environment:
+      DOWNLOAD_URL: 'https://codepush.thangvnnc.io.vn/download'
+      TOKEN_SECRET: 'asdfgh123456789qwerty'
+      RDS_HOST: 'mysql'
+      RDS_USERNAME: 'codepush'
+      RDS_PASSWORD: '123456'
+      RDS_DATABASE: 'codepush'
+      STORAGE_DIR: '/data/storage'
+      DATA_DIR: '/data/tmp'
+      NODE_ENV: 'production'
+      REDIS_HOST: 'redis'
+    depends_on:
+      - mysql
+      - redis
+  mysql:
+    image: mysql:latest
+    volumes:
+      - data-mysql:/var/lib/mysql
+      - ./sql/codepush-all-docker.sql:/docker-entrypoint-initdb.d/codepush-all.sql
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'On'
+  redis:
+    image: redis:latest
+    ports:
+      - '6379:6379'
+    volumes:
+      - data-redis:/data
+  nginx:
+    container_name: nginx
+    restart: unless-stopped
+    image: nginx
+    ports:
+        - 80:80
+        - 443:443
+    volumes:
+        - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+        - ./certbot/conf:/etc/letsencrypt
+        - ./certbot/www:/var/www/certbot
+    depends_on:
+      - server
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes: 
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    command: certonly --webroot -w /var/www/certbot --force-renewal --email thangvnnc@gmail.com -d codepush.thangvnnc.io.vn --agree-tos
+
+volumes:
+  data-storage:
+  data-tmp:
+  data-mysql:
+  data-redis:

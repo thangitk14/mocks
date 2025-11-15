@@ -1,7 +1,7 @@
 # HTTP server - redirect to HTTPS and handle ACME challenge
 server {
     listen 80;
-    server_name ${HOST_FORWARD_DOMAIN} www.${HOST_FORWARD_DOMAIN} ${PORTAL_DOMAIN} www.${PORTAL_DOMAIN} ${SERVICE_DOMAIN} www.${SERVICE_DOMAIN};
+    server_name ${HOST_FORWARD_DOMAIN} www.${HOST_FORWARD_DOMAIN} ${PORTAL_DOMAIN} www.${PORTAL_DOMAIN} ${SERVICE_DOMAIN} www.${SERVICE_DOMAIN} static.thangvnnc.io.vn cp.thangvnnc.io.vn it.thangvnnc.io.vn codepush.thangvnnc.io.vn minio-api.thangvnnc.io.vn minio-console.thangvnnc.io.vn 2fa.thangvnnc.io.vn;
 
     # Allow Let's Encrypt ACME challenge
     location /.well-known/acme-challenge/ {
@@ -315,3 +315,275 @@ server {
 #         proxy_pass http://gitlab_ce:80;
 #     }
 # }
+
+# HTTPS server for Static/Netlify
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name static.thangvnnc.io.vn;
+
+    ssl_certificate /etc/letsencrypt/live/static.thangvnnc.io.vn/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/static.thangvnnc.io.vn/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+
+    underscores_in_headers on;
+
+    location / {
+        proxy_pass http://netlify:9999/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location ~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+}
+
+# HTTPS server for CodePush Admin
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name cp.thangvnnc.io.vn;
+
+    ssl_certificate /etc/letsencrypt/live/cp.thangvnnc.io.vn/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/cp.thangvnnc.io.vn/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+
+    underscores_in_headers on;
+
+    location / {
+        proxy_pass http://codepushadmin:3001/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location ~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+}
+
+# HTTPS server for IT Tools
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name it.thangvnnc.io.vn;
+
+    ssl_certificate /etc/letsencrypt/live/it.thangvnnc.io.vn/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/it.thangvnnc.io.vn/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+
+    underscores_in_headers on;
+
+    location / {
+        proxy_pass http://it/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location ~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+}
+
+# HTTPS server for 2FAuth
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name 2fa.thangvnnc.io.vn;
+
+    ssl_certificate /etc/letsencrypt/live/2fa.thangvnnc.io.vn/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/2fa.thangvnnc.io.vn/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+
+    location / {
+        proxy_pass http://2fauth:8000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location ~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+}
+
+# HTTPS server for CodePush Server
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name codepush.thangvnnc.io.vn;
+
+    ssl_certificate /etc/letsencrypt/live/codepush.thangvnnc.io.vn/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/codepush.thangvnnc.io.vn/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+
+    location / {
+        proxy_pass http://codepush_server:3000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location ~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+}
+
+# MinIO upstreams
+upstream minio-api {
+    server minio:9000;
+}
+
+upstream minio-console {
+    server minio:9001;
+}
+
+# HTTPS server for MinIO API
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name minio-api.thangvnnc.io.vn;
+
+    ssl_certificate /etc/letsencrypt/live/minio-api.thangvnnc.io.vn/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/minio-api.thangvnnc.io.vn/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+
+    location / {
+        proxy_pass http://minio-api;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location ~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+}
+
+# HTTPS server for MinIO Console
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name minio-console.thangvnnc.io.vn;
+
+    ssl_certificate /etc/letsencrypt/live/minio-console.thangvnnc.io.vn/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/minio-console.thangvnnc.io.vn/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+
+    location / {
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_pass http://minio-console;
+    }
+
+    location ~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+}

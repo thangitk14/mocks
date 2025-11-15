@@ -146,6 +146,175 @@ services:
     networks:
       - mock_service_network
 
+  # Netlify Static Site
+  netlify:
+    restart: unless-stopped
+    image: netlify-image
+    build: ./netlify
+    container_name: docker-netlify
+    working_dir: /app
+    expose:
+     - "9999"
+    volumes:
+      - ./netlify:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=production
+    networks:
+      - mock_service_network
+
+  # CodePush Admin
+  codepushadmin:
+    build: ./code-push-admin
+    container_name: docker-codepush-admin
+    working_dir: /app
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - CODE_PUSH_VERSION=1.0.1
+    networks:
+      - mock_service_network
+
+  # IT Tools
+  it:
+    restart: unless-stopped
+    image: corentinth/it-tools:latest
+    container_name: it-tools
+    networks:
+      - mock_service_network
+
+  # CodePush Server
+  codepush_server:
+    restart: unless-stopped
+    image: shmopen/code-push-server:latest
+    platform: linux/amd64
+    container_name: docker-codepush
+    volumes:
+      - codepush_data_storage:/data/storage
+      - codepush_data_tmp:/data/tmp
+    environment:
+      DOWNLOAD_URL: 'https://codepush.thangvnnc.io.vn/download'
+      TOKEN_SECRET: 'asdfgh123456789qwerty'
+      RDS_HOST: 'codepush_mysql'
+      RDS_USERNAME: 'codepush'
+      RDS_PASSWORD: '123456'
+      RDS_DATABASE: 'codepush'
+      STORAGE_DIR: '/data/storage'
+      DATA_DIR: '/data/tmp'
+      NODE_ENV: 'production'
+      REDIS_HOST: 'codepush_redis'
+    depends_on:
+      - codepush_mysql
+      - codepush_redis
+    networks:
+      - mock_service_network
+
+  # CodePush MySQL Database
+  codepush_mysql:
+    restart: unless-stopped
+    image: mysql:8.4.0-oraclelinux8
+    container_name: docker-mysql
+    volumes:
+      - codepush_data_mysql:/var/lib/mysql
+      - ./code-push-service/sql/codepush-all-docker.sql:/docker-entrypoint-initdb.d/codepush-all.sql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: codepush
+      MYSQL_USER: codepush
+      MYSQL_PASSWORD: 123456
+    networks:
+      - mock_service_network
+
+  # CodePush Redis
+  codepush_redis:
+    restart: unless-stopped
+    image: redis:latest
+    container_name: docker-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - codepush_data_redis:/data
+    networks:
+      - mock_service_network
+
+  # MinIO Object Storage
+  minio:
+    restart: unless-stopped
+    image: minio/minio:RELEASE.2024-01-18T22-51-28Z-cpuv1
+    container_name: docker-minio
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: Test@123
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - mock_service_network
+    expose:
+      - "9000"
+      - "9001"
+
+  # 2FAuth - Two-Factor Authentication
+  2fauth:
+    restart: unless-stopped
+    image: 2fauth/2fauth
+    container_name: docker-2fauth
+    volumes:
+      - 2fauth_data:/2fauth
+    expose:
+      - "8000"
+    environment:
+      - APP_NAME=2FAuth
+      - APP_ENV=local
+      - APP_TIMEZONE=UTC
+      - APP_DEBUG=false
+      - SITE_OWNER=mail@example.com
+      - APP_KEY=SomeRandomStringOf32CharsExactly
+      - APP_URL=https://2fa.thangvnnc.io.vn
+      - IS_DEMO_APP=false
+      - LOG_CHANNEL=daily
+      - LOG_LEVEL=notice
+      - DB_DATABASE="/srv/database/database.sqlite"
+      - CACHE_DRIVER=file
+      - SESSION_DRIVER=file
+      - MAIL_MAILER=log
+      - MAIL_HOST=smtp.mailtrap.io
+      - MAIL_PORT=2525
+      - MAIL_USERNAME=null
+      - MAIL_PASSWORD=null
+      - MAIL_ENCRYPTION=null
+      - MAIL_FROM_NAME=null
+      - MAIL_FROM_ADDRESS=null
+      - MAIL_VERIFY_SSL_PEER=true
+      - THROTTLE_API=60
+      - LOGIN_THROTTLE=5
+      - AUTHENTICATION_GUARD=web-guard
+      - AUTHENTICATION_LOG_RETENTION=365
+      - AUTH_PROXY_HEADER_FOR_USER=null
+      - AUTH_PROXY_HEADER_FOR_EMAIL=null
+      - PROXY_LOGOUT_URL=null
+      - WEBAUTHN_NAME=2FAuth
+      - WEBAUTHN_ID=null
+      - WEBAUTHN_USER_VERIFICATION=preferred
+      - TRUSTED_PROXIES=null
+      - PROXY_FOR_OUTGOING_REQUESTS=null
+      - CONTENT_SECURITY_POLICY=false
+      - BROADCAST_DRIVER=log
+      - QUEUE_DRIVER=sync
+      - SESSION_LIFETIME=120
+      - REDIS_HOST=codepush_redis
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=6379
+      - PUSHER_APP_ID=
+      - PUSHER_APP_KEY=
+      - PUSHER_APP_SECRET=
+      - PUSHER_APP_CLUSTER=mt1
+      - VITE_PUSHER_APP_KEY="${PUSHER_APP_KEY}"
+      - VITE_PUSHER_APP_CLUSTER="${PUSHER_APP_CLUSTER}"
+      - MIX_ENV=local
+    networks:
+      - mock_service_network
+
   # # GitLab CE (Self-hosted GitLab)
   # gitlab_ce:
   #   image: gitlab/gitlab-ce:latest
@@ -192,6 +361,18 @@ volumes:
   certbot_gateway_data:
     driver: local
   certbot_gateway_www:
+    driver: local
+  codepush_data_storage:
+    driver: local
+  codepush_data_tmp:
+    driver: local
+  codepush_data_mysql:
+    driver: local
+  codepush_data_redis:
+    driver: local
+  minio_data:
+    driver: local
+  2fauth_data:
     driver: local
   # gitlab_config:
   #   driver: local
