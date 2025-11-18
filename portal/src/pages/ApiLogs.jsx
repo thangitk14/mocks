@@ -24,6 +24,7 @@ function ApiLogs() {
   const [mockResponses, setMockResponses] = useState({}) // Map logId -> mockResponse
   const [selectedMockLog, setSelectedMockLog] = useState(null) // Log selected for mock dialog
   const [mockFormData, setMockFormData] = useState({
+    name: '',
     statusCode: '',
     delay: '',
     headers: JSON.stringify({ "Content-Type": "application/json" }, null, 2),
@@ -493,12 +494,13 @@ function ApiLogs() {
     }
     
     setMockFormData({
+      name: existingMock?.name !== null && existingMock?.name !== undefined ? existingMock.name : '',
       statusCode: existingMock?.status_code?.toString() || log.status?.toString() || '200',
       delay: existingMock?.delay?.toString() || log.duration?.toString() || '0',
       headers: JSON.stringify(headersToShow, null, 2),
-      body: existingMock?.body 
+      body: existingMock?.body
         ? (typeof existingMock.body === 'string' ? existingMock.body : JSON.stringify(existingMock.body, null, 2))
-        : log.responseBody 
+        : log.responseBody
         ? (typeof log.responseBody === 'string' ? log.responseBody : JSON.stringify(log.responseBody, null, 2))
         : '',
       state: existingMock?.state || 'Active'
@@ -556,7 +558,7 @@ function ApiLogs() {
         // Create new mock (always create, never update)
         await mockResponseService.create({
           domain_id: parseInt(domainId),
-          name: '', // Empty string by default
+          name: mockFormData.name.trim() || '', // Use name from form or empty string
           path,
           method: selectedMockLog.method,
           status_code: parseInt(mockFormData.statusCode),
@@ -568,6 +570,7 @@ function ApiLogs() {
       } else if (existingMock) {
         // Update existing mock (normal Save)
         await mockResponseService.update(existingMock.id, {
+          name: mockFormData.name.trim() || '', // Update name
           status_code: parseInt(mockFormData.statusCode),
           delay: parseInt(mockFormData.delay) || 0,
           headers,
@@ -578,7 +581,7 @@ function ApiLogs() {
         // Create new mock (first time creating)
         await mockResponseService.create({
           domain_id: parseInt(domainId),
-          name: '', // Empty string by default
+          name: mockFormData.name.trim() || '', // Use name from form or empty string
           path,
           method: selectedMockLog.method,
           status_code: parseInt(mockFormData.statusCode),
@@ -1110,6 +1113,23 @@ function ApiLogs() {
                     <option value="Forward">Forward</option>
                     <option value="Disable">Disable</option>
                   </select>
+                </div>
+
+                {/* Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={mockFormData.name}
+                    onChange={(e) => setMockFormData({ ...mockFormData, name: e.target.value })}
+                    className="w-full px-3 py-2 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    placeholder="Optional name for this mock"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Optional field, leave empty if not needed
+                  </p>
                 </div>
 
                 {/* Status Code */}
