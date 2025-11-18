@@ -15,6 +15,8 @@ const userRoutes = require('./routes/userRoutes');
 const mappingDomainRoutes = require('./routes/mappingDomainRoutes');
 const apiLogRoutes = require('./routes/apiLogRoutes');
 const mockResponseRoutes = require('./routes/mockResponseRoutes');
+const mockGroupRoutes = require('./routes/mockGroupRoutes');
+const mockGroupResponseRoutes = require('./routes/mockGroupResponseRoutes');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -50,6 +52,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/config/mappingDomain', mappingDomainRoutes);
 app.use('/api/logs', apiLogRoutes);
 app.use('/api/mock-responses', mockResponseRoutes);
+app.use('/api/mock-groups', mockGroupRoutes);
+app.use('/api/mock-group-responses', mockGroupResponseRoutes);
 
 // Serve Postman collection file
 app.get('/api/functions/postman', (req, res) => {
