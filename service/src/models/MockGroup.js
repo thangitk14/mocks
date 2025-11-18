@@ -68,12 +68,16 @@ class MockGroup {
     const { total_mocks, active_mocks } = rows[0];
 
     // If no mocks in group, consider it InActive
-    if (total_mocks === 0) {
+    if (!total_mocks || total_mocks === 0) {
       return 'InActive';
     }
 
+    // Convert to number to ensure proper comparison
+    const totalCount = Number(total_mocks);
+    const activeCount = Number(active_mocks || 0);
+
     // Active only if ALL mocks are Active
-    return total_mocks === active_mocks ? 'Active' : 'InActive';
+    return totalCount === activeCount && activeCount > 0 ? 'Active' : 'InActive';
   }
 
   // Toggle group state
@@ -81,7 +85,7 @@ class MockGroup {
     const currentState = await this.getGroupState(groupId);
 
     if (currentState === 'Active') {
-      // Active -> InActive: Set all mocks to Forward
+      // Active -> InActive: Set all mocks in group to Forward
       await db.execute(
         `UPDATE mock_responses mr
          JOIN mock_group_responses mgr ON mr.id = mgr.mock_response_id
@@ -91,17 +95,30 @@ class MockGroup {
       );
       return 'InActive';
     } else {
-      // InActive -> Active: First set all to Forward, then set all to Active
-      // Step 1: Set all to Forward first
-      await db.execute(
-        `UPDATE mock_responses mr
-         JOIN mock_group_responses mgr ON mr.id = mgr.mock_response_id
-         SET mr.state = 'Forward'
+      // InActive -> Active:
+      // Step 1: For each mock in group, set ALL mocks with same path+method to Forward
+      // Step 2: Then set mocks in group to Active
+
+      // First, get all mocks in this group with their path/method/domain
+      const [groupMocks] = await db.execute(
+        `SELECT DISTINCT mr.domain_id, mr.path, mr.method
+         FROM mock_group_responses mgr
+         JOIN mock_responses mr ON mgr.mock_response_id = mr.id
          WHERE mgr.group_id = ?`,
         [groupId]
       );
 
-      // Step 2: Set all to Active
+      // For each unique path/method combination, set all related mocks to Forward
+      for (const mock of groupMocks) {
+        await db.execute(
+          `UPDATE mock_responses
+           SET state = 'Forward'
+           WHERE domain_id = ? AND path = ? AND method = ?`,
+          [mock.domain_id, mock.path, mock.method]
+        );
+      }
+
+      // Now set only the mocks in this group to Active
       await db.execute(
         `UPDATE mock_responses mr
          JOIN mock_group_responses mgr ON mr.id = mgr.mock_response_id
@@ -109,6 +126,7 @@ class MockGroup {
          WHERE mgr.group_id = ?`,
         [groupId]
       );
+
       return 'Active';
     }
   }
