@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { mockResponseService } from '../services/mockResponseService'
 import { mappingDomainService } from '../services/mappingDomainService'
 import { useError } from '../contexts/ErrorContext'
+import { useAuth } from '../contexts/AuthContext'
 
 function MockResponses() {
   const { domainId } = useParams()
@@ -25,6 +26,10 @@ function MockResponses() {
   })
   const [formLoading, setFormLoading] = useState(false)
   const { showError } = useError()
+  const { permissions } = useAuth()
+
+  // Check if user has permission for mocks-advance (or is admin with /*)
+  const hasMocksAdvancePermission = permissions.some(perm => perm.includes('/mocks-advance/') || perm === '/*')
 
   const fetchDomain = async () => {
     try {
@@ -245,13 +250,25 @@ function MockResponses() {
             <button
               onClick={() => navigate(`/mapping-domain/${domainId}/mocks`, { state: location.state })}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                location.pathname.includes('/mocks')
+                location.pathname.includes('/mocks') && !location.pathname.includes('/mocks-advance')
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
               }`}
             >
               Mocks
             </button>
+            {hasMocksAdvancePermission && (
+              <button
+                onClick={() => navigate(`/mapping-domain/${domainId}/mocks-advance`, { state: location.state })}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  location.pathname.includes('/mocks-advance')
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                }`}
+              >
+                Mocks-advance
+              </button>
+            )}
           </nav>
         </div>
       </div>

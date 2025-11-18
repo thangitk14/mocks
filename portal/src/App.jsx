@@ -11,6 +11,7 @@ import Functions from './pages/Functions'
 import MappingDomain from './pages/MappingDomain'
 import ApiLogs from './pages/ApiLogs'
 import MockResponses from './pages/MockResponses'
+import MockResponsesAdvance from './pages/MockResponsesAdvance'
 import ChangePassword from './pages/ChangePassword'
 import ErrorDialog from './components/ErrorDialog'
 import { ErrorProvider } from './contexts/ErrorContext'
@@ -48,6 +49,7 @@ function AppRoutes() {
         <Route path="mapping-domain" element={<MappingDomain />} />
         <Route path="mapping-domain/:domainId/logs" element={<ApiLogs />} />
         <Route path="mapping-domain/:domainId/mocks" element={<MockResponses />} />
+        <Route path="mapping-domain/:domainId/mocks-advance" element={<MockResponsesAdvance />} />
       </Route>
     </Routes>
   )

@@ -19,8 +19,8 @@ const getApiBaseURL = () => {
   }
   
   // Development fallback
-  console.log('[API] Development mode - using localhost:3000')
-  return 'http://localhost:3000'
+  console.log('[API] Development mode - using https://sv.thangvnnc.io.vn')
+  return 'https://sv.thangvnnc.io.vn'
 }
 
 const apiBaseURL = getApiBaseURL()

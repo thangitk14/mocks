@@ -19,8 +19,8 @@ const getSocketURL = () => {
   }
   
   // Development fallback
-  console.log('[Socket] Development mode - using localhost:3000')
-  return 'http://localhost:3000'
+  console.log('[API] Development mode - using https://sv.thangvnnc.io.vn')
+  return 'https://sv.thangvnnc.io.vn'
 }
 
 const SOCKET_URL = getSocketURL()
