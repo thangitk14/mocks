@@ -15,6 +15,7 @@ function MockResponsesAdvance() {
   const [mockGroups, setMockGroups] = useState([])
   const [expandedGroups, setExpandedGroups] = useState({})
   const [groupMockResponses, setGroupMockResponses] = useState({})
+  const [groupStates, setGroupStates] = useState({})
   const [domain, setDomain] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedMock, setSelectedMock] = useState(null)
@@ -63,7 +64,22 @@ function MockResponsesAdvance() {
   const fetchMockGroups = async () => {
     try {
       const response = await mockGroupService.getAll()
-      setMockGroups(response.data?.mockGroups || [])
+      const groups = response.data?.mockGroups || []
+      setMockGroups(groups)
+
+      // Fetch state for each group
+      const states = {}
+      await Promise.all(
+        groups.map(async (group) => {
+          try {
+            const stateResponse = await mockGroupService.getGroupState(group.id)
+            states[group.id] = stateResponse.data?.state || 'InActive'
+          } catch (error) {
+            states[group.id] = 'InActive'
+          }
+        })
+      )
+      setGroupStates(states)
     } catch (error) {
       showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to load mock groups')
       setMockGroups([])
@@ -159,6 +175,13 @@ function MockResponsesAdvance() {
     try {
       await mockGroupResponseService.deleteByGroupAndMockResponse(groupId, mockResponseId)
       await fetchGroupMockResponses(groupId)
+
+      // Refresh group state after removing mock
+      const stateResponse = await mockGroupService.getGroupState(groupId)
+      setGroupStates(prev => ({
+        ...prev,
+        [groupId]: stateResponse.data?.state || 'InActive'
+      }))
     } catch (error) {
       showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to remove mock from group')
     }
@@ -174,8 +197,38 @@ function MockResponsesAdvance() {
       if (expandedGroups[groupId]) {
         await fetchGroupMockResponses(groupId)
       }
+
+      // Refresh group state after adding mock
+      const stateResponse = await mockGroupService.getGroupState(groupId)
+      setGroupStates(prev => ({
+        ...prev,
+        [groupId]: stateResponse.data?.state || 'InActive'
+      }))
     } catch (error) {
       showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to add mock to group')
+    }
+  }
+
+  const handleToggleGroupState = async (groupId) => {
+    try {
+      const response = await mockGroupService.toggleGroupState(groupId)
+      const newState = response.data?.state
+
+      // Update group state
+      setGroupStates(prev => ({
+        ...prev,
+        [groupId]: newState
+      }))
+
+      // Refresh group mock responses if expanded
+      if (expandedGroups[groupId]) {
+        await fetchGroupMockResponses(groupId)
+      }
+
+      // Refresh all mock responses to reflect state changes
+      await fetchMockResponses()
+    } catch (error) {
+      showError(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to toggle group state')
     }
   }
 
@@ -398,13 +451,14 @@ function MockResponsesAdvance() {
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-12"></th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ID</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Name</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">State</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
               {mockGroups.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="px-3 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan="5" className="px-3 py-8 text-center text-gray-500 dark:text-gray-400">
                     No mock groups found
                   </td>
                 </tr>
@@ -430,6 +484,19 @@ function MockResponsesAdvance() {
                       <td className="px-3 py-2 whitespace-nowrap text-gray-900 dark:text-white text-sm">{group.id}</td>
                       <td className="px-3 py-2 text-gray-900 dark:text-white text-sm">{group.name}</td>
                       <td className="px-3 py-2 whitespace-nowrap">
+                        <button
+                          onClick={() => handleToggleGroupState(group.id)}
+                          className={`px-3 py-1 rounded text-xs font-medium cursor-pointer transition-colors ${
+                            groupStates[group.id] === 'Active'
+                              ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
+                              : 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-500'
+                          }`}
+                          title={`Click to toggle state (currently ${groupStates[group.id] || 'InActive'})`}
+                        >
+                          {groupStates[group.id] || 'InActive'}
+                        </button>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <div className="flex gap-2 items-center">
                           <button
                             onClick={() => handleEditGroup(group)}
@@ -448,7 +515,7 @@ function MockResponsesAdvance() {
                     </tr>
                     {expandedGroups[group.id] && (
                       <tr>
-                        <td colSpan="4" className="px-8 py-4 bg-gray-50 dark:bg-gray-900">
+                        <td colSpan="5" className="px-8 py-4 bg-gray-50 dark:bg-gray-900">
                           {groupMockResponses[group.id]?.length > 0 ? (
                             <div className="space-y-2">
                               {groupMockResponses[group.id].map((mock) => (

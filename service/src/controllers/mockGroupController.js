@@ -151,10 +151,65 @@ const deleteMockGroup = async (req, res, next) => {
   }
 };
 
+const getGroupState = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const mockGroup = await MockGroup.findById(id);
+    if (!mockGroup) {
+      throw new AppError({
+        message: 'Mock group not found',
+        statusCode: 404,
+        errorCode: 'MOCK_GROUP_NOT_FOUND'
+      });
+    }
+
+    const state = await MockGroup.getGroupState(id);
+
+    res.json({
+      success: true,
+      data: {
+        state
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const toggleGroupState = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const mockGroup = await MockGroup.findById(id);
+    if (!mockGroup) {
+      throw new AppError({
+        message: 'Mock group not found',
+        statusCode: 404,
+        errorCode: 'MOCK_GROUP_NOT_FOUND'
+      });
+    }
+
+    const newState = await MockGroup.toggleGroupState(id);
+
+    res.json({
+      success: true,
+      data: {
+        state: newState
+      },
+      message: `Group state changed to ${newState}`
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getMockGroups,
   getMockGroupById,
   createMockGroup,
   updateMockGroup,
-  deleteMockGroup
+  deleteMockGroup,
+  getGroupState,
+  toggleGroupState
 };

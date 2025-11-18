@@ -5,7 +5,9 @@ const {
   getMockGroupById,
   createMockGroup,
   updateMockGroup,
-  deleteMockGroup
+  deleteMockGroup,
+  getGroupState,
+  toggleGroupState
 } = require('../controllers/mockGroupController');
 const authenticate = require('../middleware/auth');
 
@@ -17,6 +19,12 @@ router.get('/', getMockGroups);
 
 // Get mock group by ID
 router.get('/:id', getMockGroupById);
+
+// Get group state
+router.get('/:id/state', getGroupState);
+
+// Toggle group state
+router.post('/:id/toggle-state', toggleGroupState);
 
 // Create mock group
 router.post('/', createMockGroup);

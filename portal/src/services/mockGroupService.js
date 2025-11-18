@@ -24,5 +24,15 @@ export const mockGroupService = {
   delete: async (id) => {
     const response = await api.delete(`/api/mock-groups/${id}`)
     return response.data
+  },
+
+  getGroupState: async (id) => {
+    const response = await api.get(`/api/mock-groups/${id}/state`)
+    return response.data
+  },
+
+  toggleGroupState: async (id) => {
+    const response = await api.post(`/api/mock-groups/${id}/toggle-state`)
+    return response.data
   }
 }
