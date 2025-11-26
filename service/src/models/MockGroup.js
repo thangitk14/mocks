@@ -17,16 +17,16 @@ class MockGroup {
     return rows[0];
   }
 
-  static async findAll(domainId = null) {
-    if (domainId) {
-      const [rows] = await db.execute(
-        'SELECT * FROM mock_groups WHERE domain_id = ? ORDER BY created_at DESC',
-        [domainId]
-      );
-      return rows;
+  static async findAll(domainId) {
+    // domainId is required - always filter by domain_id
+    if (!domainId || isNaN(parseInt(domainId))) {
+      throw new Error('domainId is required and must be a valid number');
     }
+
+    const domainIdInt = parseInt(domainId);
     const [rows] = await db.execute(
-      'SELECT * FROM mock_groups ORDER BY created_at DESC'
+      'SELECT * FROM mock_groups WHERE domain_id = ? ORDER BY created_at DESC',
+      [domainIdInt]
     );
     return rows;
   }

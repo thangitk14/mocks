@@ -62,15 +62,23 @@ function MockResponsesAdvance() {
   }
 
   const fetchMockGroups = async () => {
+    if (!domainId) {
+      console.warn('fetchMockGroups: domainId is missing')
+      setMockGroups([])
+      return
+    }
+
     try {
       const response = await mockGroupService.getAll(domainId)
       const groups = response.data?.mockGroups || []
-      setMockGroups(groups)
+      // Filter groups to ensure they belong to current domain (double check)
+      const filteredGroups = groups.filter(group => group.domain_id === parseInt(domainId))
+      setMockGroups(filteredGroups)
 
-      // Fetch state for each group
+      // Fetch state for each group (use filteredGroups)
       const states = {}
       await Promise.all(
-        groups.map(async (group) => {
+        filteredGroups.map(async (group) => {
           try {
             const stateResponse = await mockGroupService.getGroupState(group.id)
             states[group.id] = stateResponse.data?.state || 'InActive'

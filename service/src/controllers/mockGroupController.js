@@ -5,7 +5,27 @@ const AppError = require('../utils/AppError');
 const getMockGroups = async (req, res, next) => {
   try {
     const { domainId } = req.query;
-    const domainIdInt = domainId ? parseInt(domainId) : null;
+    
+    // domainId is required - return error if not provided
+    if (!domainId) {
+      throw new AppError({
+        message: 'domainId is required',
+        statusCode: 400,
+        errorCode: 'MISSING_REQUIRED_FIELDS'
+      });
+    }
+
+    const domainIdInt = parseInt(domainId);
+    
+    // Validate domainId is a valid number
+    if (isNaN(domainIdInt)) {
+      throw new AppError({
+        message: 'domainId must be a valid number',
+        statusCode: 400,
+        errorCode: 'INVALID_DOMAIN_ID'
+      });
+    }
+
     const mockGroups = await MockGroup.findAll(domainIdInt);
 
     res.json({
@@ -67,9 +87,18 @@ const createMockGroup = async (req, res, next) => {
       });
     }
 
+    const domainIdInt = parseInt(domain_id);
+    if (isNaN(domainIdInt)) {
+      throw new AppError({
+        message: 'domain_id must be a valid number',
+        statusCode: 400,
+        errorCode: 'INVALID_DOMAIN_ID'
+      });
+    }
+
     const mockGroupId = await MockGroup.create({
       name: name.trim(),
-      domain_id: parseInt(domain_id)
+      domain_id: domainIdInt
     });
 
     const mockGroup = await MockGroup.findById(mockGroupId);
