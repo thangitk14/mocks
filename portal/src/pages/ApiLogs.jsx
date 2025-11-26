@@ -584,13 +584,15 @@ function ApiLogs() {
 
       const existingMock = mockResponses[selectedMockLog.id]
       
+      let updatedMockResponse = null
+
       if (saveMore) {
         // Save More: Disable all existing mocks with same path and method, then create new one
         // This creates a NEW mock response, not updating the existing one
         await mockResponseService.disableByPathAndMethod(parseInt(domainId), path, selectedMockLog.method)
         
         // Create new mock (always create, never update)
-        await mockResponseService.create({
+        const createResponse = await mockResponseService.create({
           domain_id: parseInt(domainId),
           name: mockFormData.name.trim() || '', // Use name from form or empty string
           path,
@@ -601,9 +603,10 @@ function ApiLogs() {
           body,
           state: 'Active' // Always Active for new mock
         })
+        updatedMockResponse = createResponse.data?.mockResponse
       } else if (existingMock) {
         // Update existing mock (normal Save)
-        await mockResponseService.update(existingMock.id, {
+        const updateResponse = await mockResponseService.update(existingMock.id, {
           name: mockFormData.name.trim() || '', // Update name
           status_code: parseInt(mockFormData.statusCode),
           delay: parseInt(mockFormData.delay) || 0,
@@ -611,9 +614,10 @@ function ApiLogs() {
           body,
           state: mockFormData.state
         })
+        updatedMockResponse = updateResponse.data?.mockResponse
       } else {
         // Create new mock (first time creating)
-        await mockResponseService.create({
+        const createResponse = await mockResponseService.create({
           domain_id: parseInt(domainId),
           name: mockFormData.name.trim() || '', // Use name from form or empty string
           path,
@@ -624,15 +628,31 @@ function ApiLogs() {
           body,
           state: mockFormData.state
         })
+        updatedMockResponse = createResponse.data?.mockResponse
       }
 
-      // Refresh mock responses
-      const response = await mockResponseService.getByPath(domainId, path, selectedMockLog.method)
-      if (response.data?.mockResponse) {
+      // Update mock response in state using response from create/update API
+      // If response doesn't include mockResponse, fetch using batch API (more efficient than single getByPath)
+      if (updatedMockResponse) {
         setMockResponses(prev => ({
           ...prev,
-          [selectedMockLog.id]: response.data.mockResponse
+          [selectedMockLog.id]: updatedMockResponse
         }))
+      } else {
+        // Fallback: use batch API to fetch (more efficient than getByPath)
+        try {
+          const batchResponse = await mockResponseService.getByPaths(domainId, [{ path, method: selectedMockLog.method }], true)
+          const mockKey = `${path}::${selectedMockLog.method}`
+          const mockResponse = batchResponse.data?.mockResponses?.[mockKey]
+          if (mockResponse) {
+            setMockResponses(prev => ({
+              ...prev,
+              [selectedMockLog.id]: mockResponse
+            }))
+          }
+        } catch (error) {
+          console.error('Failed to fetch updated mock response:', error)
+        }
       }
 
       // Close dialog after successful save (both Save and Save More)
