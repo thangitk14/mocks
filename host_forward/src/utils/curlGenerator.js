@@ -1,18 +1,36 @@
+// Normalize path by removing trailing slash (except for root)
+const normalizePath = (path) => {
+  if (!path || path === '/') return '/';
+  return path.endsWith('/') ? path.slice(0, -1) : path;
+};
+
 const generateCurl = (req, domain) => {
   const method = req.method.toUpperCase();
   
   // Calculate forward path by removing the mapping path prefix
-  let forwardPath = req.path;
-  if (req.path.startsWith(domain.path)) {
+  // This logic should match the logic in forward.js
+  const path = req.path;
+  let forwardPath = path;
+  
+  // Extract first path segment (e.g., /vietbank from /vietbank/api/master-data-service/...)
+  const pathSegments = path.split('/').filter(segment => segment.length > 0);
+  const firstPathSegment = pathSegments.length > 0 ? `/${pathSegments[0]}` : '/';
+  
+  // Remove the first path segment (mapping path) from the full path
+  if (path.startsWith(domain.path)) {
     // Remove the mapped path prefix
-    forwardPath = req.path.substring(domain.path.length) || '/';
+    forwardPath = path.substring(domain.path.length) || '/';
+  } else if (path.startsWith(firstPathSegment)) {
+    // Remove the first path segment (this handles cases where domain.path is normalized differently)
+    forwardPath = path.substring(firstPathSegment.length) || '/';
   }
-  // Handle wildcard mapping (e.g., /vietbank/sample/*)
+  // Handle wildcard mapping (e.g., /vietbank/*)
   else if (domain.path.endsWith('/*')) {
     const basePath = domain.path.slice(0, -1); // Remove trailing *
-    if (req.path.startsWith(basePath)) {
-      forwardPath = req.path.substring(basePath.length) || '/';
-    } else if (req.path === basePath.slice(0, -1)) {
+    if (path.startsWith(basePath)) {
+      // Remove the base path prefix
+      forwardPath = path.substring(basePath.length) || '/';
+    } else if (path === basePath.slice(0, -1)) {
       // Handle case where path is exactly basePath without trailing slash
       forwardPath = '/';
     }
