@@ -43,6 +43,15 @@ const generateCurl = (req, domain) => {
   
   let curl = `curl -X ${method}`;
 
+  // Escape function for header values - escape quotes and backslashes
+  const escapeHeaderValue = (value) => {
+    if (typeof value !== 'string') {
+      value = String(value);
+    }
+    // Escape backslashes first, then quotes
+    return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  };
+
   // Add headers
   const headers = { ...req.headers };
   delete headers.host;
@@ -50,8 +59,9 @@ const generateCurl = (req, domain) => {
   delete headers['content-length'];
 
   Object.entries(headers).forEach(([key, value]) => {
-    if (value) {
-      curl += ` \\\n  -H "${key}: ${value}"`;
+    if (value !== undefined && value !== null) {
+      const escapedValue = escapeHeaderValue(value);
+      curl += ` \\\n  -H "${key}: ${escapedValue}"`;
     }
   });
 
@@ -59,15 +69,22 @@ const generateCurl = (req, domain) => {
   const queryString = new URLSearchParams(req.query).toString();
   const url = queryString ? `${forwardUrl}?${queryString}` : forwardUrl;
 
+  // Escape URL for cURL command (escape quotes and backslashes)
+  const escapeUrl = (urlStr) => {
+    return urlStr.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  };
+  const escapedUrl = escapeUrl(url);
+
   // Add body for POST, PUT, PATCH
   if (['POST', 'PUT', 'PATCH'].includes(method) && req.body) {
     const bodyStr = typeof req.body === 'string' 
       ? req.body 
       : JSON.stringify(req.body);
+    // Escape single quotes in body for shell command
     curl += ` \\\n  -d '${bodyStr.replace(/'/g, "'\\''")}'`;
   }
 
-  curl += ` \\\n  "${url}"`;
+  curl += ` \\\n  "${escapedUrl}"`;
 
   return curl;
 };
