@@ -45,6 +45,17 @@ export const mockResponseService = {
       method
     })
     return response.data
+  },
+
+  getByPaths: async (domainId, paths, includeAllStates = false) => {
+    const queryParams = new URLSearchParams({ 
+      domainId,
+      ...(includeAllStates && { includeAllStates: 'true' })
+    }).toString()
+    const response = await api.post(`/api/mock-responses/batch?${queryParams}`, {
+      paths
+    })
+    return response.data
   }
 }
 

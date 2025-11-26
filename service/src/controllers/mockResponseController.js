@@ -258,10 +258,78 @@ const disableByPathAndMethod = async (req, res, next) => {
   }
 };
 
+const getMockResponsesByPaths = async (req, res, next) => {
+  try {
+    const { domainId, includeAllStates } = req.query;
+    let { paths } = req.body;
+
+    if (!domainId) {
+      throw new AppError({
+        message: 'domainId is required',
+        statusCode: 400,
+        errorCode: 'MISSING_REQUIRED_FIELDS'
+      });
+    }
+
+    if (!paths || !Array.isArray(paths) || paths.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          mockResponses: {}
+        }
+      });
+    }
+
+    // Validate and normalize paths
+    const pathMethodPairs = paths
+      .filter(item => item && item.path && item.method)
+      .map(item => ({
+        path: item.path.replace(/^\//, '') || '/', // Normalize: remove leading slash, but keep '/' for root
+        method: item.method.toUpperCase()
+      }));
+
+    if (pathMethodPairs.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          mockResponses: {}
+        }
+      });
+    }
+
+    // Remove duplicates based on path+method combination
+    const uniquePairs = [];
+    const seen = new Set();
+    pathMethodPairs.forEach(pair => {
+      const key = `${pair.path}::${pair.method}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniquePairs.push(pair);
+      }
+    });
+
+    const mockResponsesMap = await MockResponse.findByPaths(
+      domainId,
+      uniquePairs,
+      includeAllStates === 'true'
+    );
+
+    res.json({
+      success: true,
+      data: {
+        mockResponses: mockResponsesMap
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getMockResponses,
   getMockResponseById,
   getMockResponseByPath,
+  getMockResponsesByPaths,
   createMockResponse,
   updateMockResponse,
   deleteMockResponse,

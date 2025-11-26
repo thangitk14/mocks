@@ -4,6 +4,7 @@ const {
   getMockResponses,
   getMockResponseById,
   getMockResponseByPath,
+  getMockResponsesByPaths,
   createMockResponse,
   updateMockResponse,
   deleteMockResponse,
@@ -13,6 +14,9 @@ const authenticate = require('../middleware/auth');
 
 // Get mock response by path (no auth required for host_forward service)
 router.get('/path', getMockResponseByPath);
+
+// Get mock responses by paths (batch) - requires authentication
+router.post('/batch', authenticate, getMockResponsesByPaths);
 
 // All other routes require authentication
 router.use(authenticate);

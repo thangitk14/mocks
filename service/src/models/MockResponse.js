@@ -167,6 +167,63 @@ class MockResponse {
     }
     return rows[0];
   }
+
+  static async findByPaths(domainId, pathMethodPairs, includeAllStates = false) {
+    // pathMethodPairs is an array of { path, method }
+    if (!pathMethodPairs || pathMethodPairs.length === 0) {
+      return {};
+    }
+
+    // Build WHERE clause with placeholders
+    const conditions = [];
+    const values = [];
+
+    pathMethodPairs.forEach(({ path, method }) => {
+      conditions.push('(path = ? AND method = ?)');
+      values.push(path, method);
+    });
+
+    const whereClause = conditions.join(' OR ');
+    
+    // Build query - get latest mock for each path/method combination
+    // Use a simpler approach: get all matching records, then filter in code
+    let query;
+    if (includeAllStates) {
+      // Get all mocks regardless of state, ordered by created_at DESC
+      query = `
+        SELECT * FROM mock_responses
+        WHERE domain_id = ? AND (${whereClause})
+        ORDER BY path, method, created_at DESC
+      `;
+      values.unshift(domainId);
+    } else {
+      // Get only Active mocks, ordered by created_at DESC
+      query = `
+        SELECT * FROM mock_responses
+        WHERE domain_id = ? AND state = 'Active' AND (${whereClause})
+        ORDER BY path, method, created_at DESC
+      `;
+      values.unshift(domainId);
+    }
+
+    const [rows] = await db.execute(query, values);
+    
+    // Parse JSON fields and create a map by path+method (keep only latest for each)
+    const resultMap = {};
+    rows.forEach(row => {
+      const key = `${row.path}::${row.method}`;
+      // Only keep the first (latest) record for each path+method combination
+      if (!resultMap[key]) {
+        resultMap[key] = {
+          ...row,
+          headers: row.headers ? JSON.parse(row.headers) : {},
+          body: row.body ? JSON.parse(row.body) : null
+        };
+      }
+    });
+
+    return resultMap;
+  }
 }
 
 module.exports = MockResponse;

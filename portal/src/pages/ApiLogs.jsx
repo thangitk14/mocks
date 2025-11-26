@@ -72,14 +72,16 @@ function ApiLogs() {
     fetchLogs()
   }, [domainId, page, limit])
 
-  // Fetch mock responses for all logs
+  // Fetch mock responses for all logs (optimized: batch request)
   useEffect(() => {
     const fetchMockResponses = async () => {
       if (!domain || logs.length === 0) return
       
-      const mockMap = {}
-      for (const log of logs) {
-        try {
+      try {
+        // Collect all path/method pairs from logs
+        const pathMethodMap = new Map() // key: "path::method", value: { path, method, logIds: [] }
+        
+        logs.forEach(log => {
           let path = getForwardPath(log.toCUrl)
           if (path && path !== 'N/A') {
             // Normalize path: remove leading slash, but keep '/' for root
@@ -88,17 +90,49 @@ function ApiLogs() {
               path = '/'
             }
             
-            // Get latest mock regardless of state to show change state button
-            const response = await mockResponseService.getByPath(domainId, path, log.method, true)
-            if (response.data?.mockResponse) {
-              mockMap[log.id] = response.data.mockResponse
+            const key = `${path}::${log.method}`
+            if (!pathMethodMap.has(key)) {
+              pathMethodMap.set(key, {
+                path,
+                method: log.method,
+                logIds: []
+              })
             }
+            pathMethodMap.get(key).logIds.push(log.id)
           }
-        } catch (error) {
-          // Mock response not found, ignore
+        })
+
+        // Convert to array and remove duplicates (already handled by Map)
+        const paths = Array.from(pathMethodMap.values())
+        
+        if (paths.length === 0) {
+          setMockResponses({})
+          return
         }
+
+        // Get latest mock regardless of state to show change state button
+        const response = await mockResponseService.getByPaths(domainId, paths, true)
+        const mockResponsesMap = response.data?.mockResponses || {}
+        
+        // Map mock responses back to log IDs
+        const mockMap = {}
+        pathMethodMap.forEach(({ path, method, logIds }, key) => {
+          const mockKey = `${path}::${method}`
+          const mockResponse = mockResponsesMap[mockKey]
+          if (mockResponse) {
+            // Assign the same mock response to all logs with this path/method
+            logIds.forEach(logId => {
+              mockMap[logId] = mockResponse
+            })
+          }
+        })
+        
+        setMockResponses(mockMap)
+      } catch (error) {
+        console.error('Failed to fetch mock responses:', error)
+        // On error, set empty map instead of failing silently
+        setMockResponses({})
       }
-      setMockResponses(mockMap)
     }
     
     fetchMockResponses()
