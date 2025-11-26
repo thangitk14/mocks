@@ -4,7 +4,9 @@ const AppError = require('../utils/AppError');
 
 const getMockGroups = async (req, res, next) => {
   try {
-    const mockGroups = await MockGroup.findAll();
+    const { domainId } = req.query;
+    const domainIdInt = domainId ? parseInt(domainId) : null;
+    const mockGroups = await MockGroup.findAll(domainIdInt);
 
     res.json({
       success: true,
@@ -47,7 +49,7 @@ const getMockGroupById = async (req, res, next) => {
 
 const createMockGroup = async (req, res, next) => {
   try {
-    const { name } = req.body;
+    const { name, domain_id } = req.body;
 
     if (!name || !name.trim()) {
       throw new AppError({
@@ -57,8 +59,17 @@ const createMockGroup = async (req, res, next) => {
       });
     }
 
+    if (!domain_id) {
+      throw new AppError({
+        message: 'domain_id is required',
+        statusCode: 400,
+        errorCode: 'MISSING_REQUIRED_FIELDS'
+      });
+    }
+
     const mockGroupId = await MockGroup.create({
-      name: name.trim()
+      name: name.trim(),
+      domain_id: parseInt(domain_id)
     });
 
     const mockGroup = await MockGroup.findById(mockGroupId);

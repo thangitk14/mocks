@@ -196,10 +196,13 @@ async function initDatabase() {
     await connection.query(`
       CREATE TABLE IF NOT EXISTS mock_groups (
         id INT PRIMARY KEY AUTO_INCREMENT,
+        domain_id INT NOT NULL,
         name VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_name (name)
+        INDEX idx_name (name),
+        INDEX idx_domain_id (domain_id),
+        FOREIGN KEY (domain_id) REFERENCES mapping_domains(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
     console.log('Mock groups table created or already exists');

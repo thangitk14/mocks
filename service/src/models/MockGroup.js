@@ -1,10 +1,10 @@
 const db = require('../config/database');
 
 class MockGroup {
-  static async create({ name }) {
+  static async create({ name, domain_id }) {
     const [result] = await db.execute(
-      'INSERT INTO mock_groups (name) VALUES (?)',
-      [name]
+      'INSERT INTO mock_groups (name, domain_id) VALUES (?, ?)',
+      [name, domain_id]
     );
     return result.insertId;
   }
@@ -17,7 +17,14 @@ class MockGroup {
     return rows[0];
   }
 
-  static async findAll() {
+  static async findAll(domainId = null) {
+    if (domainId) {
+      const [rows] = await db.execute(
+        'SELECT * FROM mock_groups WHERE domain_id = ? ORDER BY created_at DESC',
+        [domainId]
+      );
+      return rows;
+    }
     const [rows] = await db.execute(
       'SELECT * FROM mock_groups ORDER BY created_at DESC'
     );

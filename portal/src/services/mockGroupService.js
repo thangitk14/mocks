@@ -1,8 +1,9 @@
 import api from './api'
 
 export const mockGroupService = {
-  getAll: async () => {
-    const response = await api.get('/api/mock-groups')
+  getAll: async (domainId) => {
+    const queryParams = domainId ? `?domainId=${domainId}` : ''
+    const response = await api.get(`/api/mock-groups${queryParams}`)
     return response.data
   },
 

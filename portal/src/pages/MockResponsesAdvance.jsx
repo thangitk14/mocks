@@ -63,7 +63,7 @@ function MockResponsesAdvance() {
 
   const fetchMockGroups = async () => {
     try {
-      const response = await mockGroupService.getAll()
+      const response = await mockGroupService.getAll(domainId)
       const groups = response.data?.mockGroups || []
       setMockGroups(groups)
 
@@ -154,7 +154,7 @@ function MockResponsesAdvance() {
       if (selectedGroup) {
         await mockGroupService.update(selectedGroup.id, { name: groupFormData.name.trim() })
       } else {
-        await mockGroupService.create({ name: groupFormData.name.trim() })
+        await mockGroupService.create({ name: groupFormData.name.trim(), domain_id: parseInt(domainId) })
       }
 
       setShowGroupForm(false)
