@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "dev:production": "nodemon --env-file=.env.production src/index.js"
+    "dev:production": "nodemon --env-file=.env.production src/index.js",
+    "migrate": "node scripts/run-migrations.js",
+    "migrate:disable-state": "node scripts/migrate-add-disable-state.js",
+    "migrate:domain-id": "node scripts/migrate-add-domain-id-to-mock-groups.js"
   },
   "keywords": [
     "express",
