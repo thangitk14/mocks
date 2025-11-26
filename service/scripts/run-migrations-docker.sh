@@ -26,9 +26,12 @@ elif [ "$1" == "disable-state" ]; then
 elif [ "$1" == "domain-id" ]; then
     echo "Running migrate-add-domain-id-to-mock-groups..."
     docker exec -it ${CONTAINER_NAME} npm run migrate:domain-id
+elif [ "$1" == "update-domain-id" ]; then
+    echo "Running migrate-update-mock-groups-domain-id..."
+    docker exec -it ${CONTAINER_NAME} npm run migrate:update-domain-id
 else
     echo "Unknown migration: $1"
-    echo "Available migrations: disable-state, domain-id"
+    echo "Available migrations: disable-state, domain-id, update-domain-id"
     exit 1
 fi
 

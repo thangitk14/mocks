@@ -1,5 +1,6 @@
 const migrateAddDisableState = require('./migrate-add-disable-state');
 const migrateAddDomainIdToMockGroups = require('./migrate-add-domain-id-to-mock-groups');
+const migrateUpdateMockGroupsDomainId = require('./migrate-update-mock-groups-domain-id');
 
 async function runAllMigrations() {
   console.log('========================================');
@@ -8,7 +9,8 @@ async function runAllMigrations() {
 
   const migrations = [
     { name: 'Add Disable State', fn: migrateAddDisableState },
-    { name: 'Add Domain ID to Mock Groups', fn: migrateAddDomainIdToMockGroups }
+    { name: 'Add Domain ID to Mock Groups', fn: migrateAddDomainIdToMockGroups },
+    { name: 'Update Mock Groups Domain ID', fn: migrateUpdateMockGroupsDomainId }
   ];
 
   for (const migration of migrations) {
