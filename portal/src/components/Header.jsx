@@ -4,7 +4,7 @@ function Header({ onToggleNav }) {
   const { user } = useAuth()
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-md h-16 flex items-center justify-between px-4 md:px-6">
+    <header className="bg-white dark:bg-gray-800 shadow-md h-16 flex items-center justify-between px-4 md:px-6 relative">
       <div className="flex items-center gap-3">
         {/* Mobile menu button */}
         <button
@@ -18,6 +18,14 @@ function Header({ onToggleNav }) {
         </button>
         <h1 className="text-lg md:text-2xl font-bold text-gray-800 dark:text-white">Dashboard</h1>
       </div>
+      
+      {/* Brand text in center - Desktop only */}
+      <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 pointer-events-none">
+        <span className="text-xl md:text-2xl font-medium text-gray-300 dark:text-gray-600 opacity-40">
+          Trần Phước Thắng
+        </span>
+      </div>
+      
       <div className="flex items-center gap-2 md:gap-4">
         {user && (
           <span className="text-sm md:text-base text-gray-600 dark:text-gray-300 hidden sm:inline">
