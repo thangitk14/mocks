@@ -315,6 +315,56 @@ services:
     networks:
       - mock_service_network
 
+  # Service Logs MySQL Database
+  service_logs_mysql:
+    image: mysql:8.4.0-oraclelinux8
+    platform: linux/amd64
+    container_name: service_logs_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SERVICE_LOGS_DB_PASSWORD:-Test@123}
+      MYSQL_DATABASE: ${SERVICE_LOGS_DB_NAME:-service_logs}
+    ports:
+      - "10001:3306"
+    volumes:
+      - service_logs_mysql_data:/var/lib/mysql
+      - ./service_logs/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${SERVICE_LOGS_DB_PASSWORD:-Test@123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mock_service_network
+
+  # Service Logs (Node.js Service)
+  service_logs:
+    build:
+      context: ./service_logs
+      dockerfile: Dockerfile
+    container_name: service_logs_app
+    restart: unless-stopped
+    ports:
+      - "${PUBLIC_SERVICE_LOGS_PORT:-10000}:10000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DB_HOST: ${SERVICE_LOGS_DB_HOST:-service_logs_mysql}
+      DB_PORT: ${SERVICE_LOGS_DB_PORT:-3306}
+      DB_USER: ${SERVICE_LOGS_DB_USER:-root}
+      DB_PASSWORD: ${SERVICE_LOGS_DB_PASSWORD:-Test@123}
+      DB_NAME: ${SERVICE_LOGS_DB_NAME:-service_logs}
+      PORT: 10000
+    depends_on:
+      service_logs_mysql:
+        condition: service_healthy
+    volumes:
+      - ./service_logs/src:/app/src
+      - ./service_logs/package.json:/app/package.json
+      - /app/node_modules
+    networks:
+      - mock_service_network
+    command: npm start
+
   # # GitLab CE (Self-hosted GitLab)
   # gitlab_ce:
   #   image: gitlab/gitlab-ce:latest
@@ -373,6 +423,8 @@ volumes:
   minio_data:
     driver: local
   2fauth_data:
+    driver: local
+  service_logs_mysql_data:
     driver: local
   # gitlab_config:
   #   driver: local

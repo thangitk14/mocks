@@ -1,0 +1,135 @@
+{
+  "logs": [
+    {
+      "id": "log_1234567890abcdef",
+      "userId": "user_abc123",
+      "sessionId": "sess_xyz789_1701234567",
+      "deviceId": "browser_fingerprint_9a8b7c6d5e4f",
+      "deviceModel": "Chrome",
+      "deviceVersion": "120.0.6099.109",
+      "osName": "Windows",
+      "osVersion": "10",
+      "appVersion": "2.1.5",
+      "environment": "production",
+      "logLevel": "ERROR",
+      "logSource": "api",
+      "logCategory": "payment",
+      "logContent": "Payment processing failed: Gateway timeout after 30s",
+      "errorCode": "PAY_GATEWAY_TIMEOUT",
+      "stackTrace": "Error: Gateway timeout\n    at PaymentService.process (payment.js:145:15)\n    at async CheckoutPage.handleSubmit (checkout.js:89:5)",
+      "logIndex": "ERROR",
+      "url": "https://example.com/checkout",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      "ipAddress": "123.45.67.89",
+      "networkType": "wifi",
+      "screenResolution": "1920x1080",
+      "viewport": "1366x768",
+      "timestamp": 1701234567890,
+      "createdAt": "20231129143247890",
+      "tags": [
+        "payment",
+        "critical",
+        "checkout"
+      ],
+      "metadata": {
+        "orderId": "ORD_12345",
+        "amount": 150000,
+        "paymentMethod": "credit_card",
+        "attemptCount": 3
+      },
+      "performance": {
+        "memoryUsage": 125.5,
+        "pageLoadTime": 2340,
+        "apiResponseTime": 30120
+      },
+      "previousLogId": "log_1234567890abcdee",
+      "isResolved": false
+    },
+    {
+      "id": "log_9876543210fedcba",
+      "userId": "user_def456",
+      "sessionId": "sess_abc123_1701234568",
+      "deviceId": "mobile_ios_1a2b3c4d5e6f",
+      "deviceModel": "iPhone",
+      "deviceVersion": "17.2.1",
+      "osName": "iOS",
+      "osVersion": "17.2.1",
+      "appVersion": "2.1.5",
+      "environment": "production",
+      "logLevel": "WARN",
+      "logSource": "mobile",
+      "logCategory": "authentication",
+      "logContent": "Failed login attempt detected",
+      "errorCode": "AUTH_FAILED_ATTEMPT",
+      "stackTrace": null,
+      "logIndex": "WARN",
+      "url": "https://example.com/login",
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2_1 like Mac OS X)",
+      "ipAddress": "98.76.54.32",
+      "networkType": "4g",
+      "screenResolution": "390x844",
+      "viewport": "390x844",
+      "timestamp": 1701234568900,
+      "createdAt": "20231129143256890",
+      "tags": [
+        "auth",
+        "security",
+        "login"
+      ],
+      "metadata": {
+        "attemptCount": 2,
+        "lastAttemptTime": "2023-11-29T14:32:56Z"
+      },
+      "performance": {
+        "memoryUsage": 45.2,
+        "pageLoadTime": 1200,
+        "apiResponseTime": 850
+      },
+      "previousLogId": null,
+      "isResolved": false
+    },
+    {
+      "id": "log_abcdef1234567890",
+      "userId": "user_ghi789",
+      "sessionId": "sess_def456_1701234569",
+      "deviceId": "browser_chrome_7f8e9d0c1b2a",
+      "deviceModel": "Chrome",
+      "deviceVersion": "120.0.6099.109",
+      "osName": "macOS",
+      "osVersion": "14.2.1",
+      "appVersion": "2.1.5",
+      "environment": "staging",
+      "logLevel": "INFO",
+      "logSource": "web",
+      "logCategory": "navigation",
+      "logContent": "User navigated to dashboard",
+      "errorCode": null,
+      "stackTrace": null,
+      "logIndex": "INFO",
+      "url": "https://staging.example.com/dashboard",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+      "ipAddress": "192.168.1.100",
+      "networkType": "wifi",
+      "screenResolution": "2560x1440",
+      "viewport": "1920x1080",
+      "timestamp": 1701234569900,
+      "createdAt": "20231129143259900",
+      "tags": [
+        "navigation",
+        "dashboard"
+      ],
+      "metadata": {
+        "pageName": "dashboard",
+        "referrer": "https://staging.example.com/login"
+      },
+      "performance": {
+        "memoryUsage": 98.3,
+        "pageLoadTime": 1850,
+        "apiResponseTime": 1200
+      },
+      "previousLogId": "log_9876543210fedcba",
+      "isResolved": false
+    }
+  ]
+}
+
