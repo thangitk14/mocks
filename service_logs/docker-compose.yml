@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # MySQL Database for Service Logs
+  service_logs_mysql:
+    image: mysql:8.4.0-oraclelinux8
+    platform: linux/amd64
+    container_name: service_logs_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-Test@123}
+      MYSQL_DATABASE: ${DB_NAME:-service_logs}
+    volumes:
+      - service_logs_mysql_data:/var/lib/mysql
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD:-Test@123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - service_logs_network
+
+  # Service Logs (Node.js Service)
+  service_logs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: service_logs_app
+    restart: unless-stopped
+    ports:
+      - "80:10000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DB_HOST: ${DB_HOST:-service_logs_mysql}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-Test@123}
+      DB_NAME: ${DB_NAME:-service_logs}
+      PORT: 10000
+    depends_on:
+      service_logs_mysql:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./package.json:/app/package.json
+      - /app/node_modules
+    networks:
+      - service_logs_network
+    command: npm start
+
+volumes:
+  service_logs_mysql_data:
+    driver: local
+
+networks:
+  service_logs_network:
+    driver: bridge
+
