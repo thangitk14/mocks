@@ -8,19 +8,19 @@ const getApiBaseURL = () => {
     return import.meta.env.VITE_API_BASE_URL
   }
   
-  // In production, use service domain (sv.thangvnnc.io.vn)
+  // In production, use service domain (sv.thangtp.id.vn)
   if (import.meta.env.MODE === 'production') {
     const protocol = window.location.protocol
     // Use service domain for API calls
-    const serviceDomain = import.meta.env.VITE_SERVICE_DOMAIN || 'sv.thangvnnc.io.vn'
+    const serviceDomain = import.meta.env.VITE_SERVICE_DOMAIN || 'sv.thangtp.id.vn'
     const apiUrl = `${protocol}//${serviceDomain}`
     console.log('[API] Production mode - using service domain:', apiUrl)
     return apiUrl
   }
   
   // Development fallback
-  console.log('[API] Development mode - using https://sv.thangvnnc.io.vn')
-  return 'https://sv.thangvnnc.io.vn'
+  console.log('[API] Development mode - using https://sv.thangtp.id.vn')
+  return 'https://sv.thangtp.id.vn'
 }
 
 const apiBaseURL = getApiBaseURL()

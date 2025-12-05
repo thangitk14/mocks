@@ -7,10 +7,10 @@ set -e
 
 # Danh sách các domains cần cấu hình
 DOMAINS=(
-    "fw.thangvnnc.io.vn"
-    "tp.thangvnnc.io.vn"
-    "sv.thangvnnc.io.vn"
-    "gitlab.thangvnnc.io.vn"
+    "fw.thangtp.id.vn"
+    "tp.thangtp.id.vn"
+    "sv.thangtp.id.vn"
+    "gitlab.thangtp.id.vn"
 )
 
 PRIVATE_IP="0.0.0.0"

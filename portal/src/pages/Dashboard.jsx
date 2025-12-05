@@ -61,7 +61,7 @@ function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Mapping Domains */}
         <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow">
-          <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-800 dark:text-white">Mapping Domains: (https://fw.thangvnnc.io.vn/*)</h3>
+          <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-800 dark:text-white">Mapping Domains: (https://fw.thangtp.id.vn/*)</h3>
           {loading ? (
             <div className="text-center py-4 text-gray-500 dark:text-gray-400">Loading...</div>
           ) : Object.keys(groupedDomains).length === 0 ? (
@@ -83,7 +83,7 @@ function Dashboard() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="text-xs md:text-sm font-medium text-gray-900 dark:text-white truncate">
-                              https://fw.thangvnnc.io.vn{domain.path}
+                              https://fw.thangtp.id.vn{domain.path}
                             </div>
                             <div className="text-xs text-gray-600 dark:text-gray-400 truncate mt-1">
                               → {domain.forward_domain}

@@ -4,7 +4,7 @@ FROM node:20-alpine3.17 AS builder
 WORKDIR /app
 
 # Build arguments for Vite environment variables
-ARG VITE_SERVICE_DOMAIN=sv.thangvnnc.io.vn
+ARG VITE_SERVICE_DOMAIN=sv.thangtp.id.vn
 ARG VITE_API_BASE_URL
 
 # Set environment variables for build

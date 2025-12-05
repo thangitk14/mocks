@@ -6,9 +6,10 @@ version: '3.8'
 
 services:
   # MySQL Database (Oracle Linux 8 - CPU compatible)
-  mock_mysql:
-    image: mysql:8.4.0-oraclelinux8
-    platform: linux/amd64
+  mock_mysql:  
+    # image: mysql:8.4.0-oraclelinux8
+    # platform: linux/amd64
+    image: mysql:8.4.0
     container_name: mock_service_mysql
     restart: unless-stopped
     environment:
@@ -66,7 +67,7 @@ services:
       - mock_service_network
     command: npm start
 
-  # Nginx Gateway with SSL (Certbot) - handles both Host Forward and Portal
+  # Nginx Gateway (HTTP-only) - handles Host Forward, Portal, and Service
   gateway_nginx:
     build:
       context: ./gateway/nginx
@@ -74,27 +75,17 @@ services:
     container_name: mock_gateway_nginx
     restart: unless-stopped
     ports:
-      # HTTP and HTTPS ports
+      # HTTP port only
       - "${PUBLIC_GATEWAY_HTTP_PORT:-80}:80"
-      - "${PUBLIC_GATEWAY_HTTPS_PORT:-443}:443"
     environment:
-      HOST_FORWARD_DOMAIN: ${HOST_FORWARD_DOMAIN:-fw.thangvnnc.io.vn}
-      PORTAL_DOMAIN: ${PORTAL_DOMAIN:-tp.thangvnnc.io.vn}
-      SERVICE_DOMAIN: ${SERVICE_DOMAIN:-sv.thangvnnc.io.vn}
-      # GITLAB_DOMAIN: ${GITLAB_DOMAIN:-gitlab.thangvnnc.io.vn}
-      CERTBOT_EMAIL: ${CERTBOT_EMAIL:-thangvnnc@gmail.com}
+      HOST_FORWARD_DOMAIN: ${HOST_FORWARD_DOMAIN:-fw.thangtp.id.vn}
+      PORTAL_DOMAIN: ${PORTAL_DOMAIN:-tp.thangtp.id.vn}
+      SERVICE_DOMAIN: ${SERVICE_DOMAIN:-sv.thangtp.id.vn}
       # Default values
       PUBLIC_GATEWAY_HTTP_PORT: ${PUBLIC_GATEWAY_HTTP_PORT:-80}
-      PUBLIC_GATEWAY_HTTPS_PORT: ${PUBLIC_GATEWAY_HTTPS_PORT:-443}
-    volumes:
-      # Certificates volume
-      - certbot_gateway_data:/etc/letsencrypt
-      # ACME challenge directory
-      - certbot_gateway_www:/var/www/certbot
     depends_on:
       - host_forward
       - portal
-      # - gitlab_ce
     networks:
       - mock_service_network
     command: nginx -g "daemon off;"
@@ -132,7 +123,7 @@ services:
       dockerfile: Dockerfile
       args:
         # Build-time arguments for Vite environment variables
-        VITE_SERVICE_DOMAIN: ${SERVICE_DOMAIN:-sv.thangvnnc.io.vn}
+        VITE_SERVICE_DOMAIN: ${SERVICE_DOMAIN:-sv.thangtp.id.vn}
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
       # Vite will automatically load .env.production file during build
       # Configure VITE_API_BASE_URL in portal/.env.production file
@@ -146,224 +137,224 @@ services:
     networks:
       - mock_service_network
 
-  # Netlify Static Site
-  netlify:
-    restart: unless-stopped
-    image: netlify-image
-    build: ./netlify
-    container_name: docker-netlify
-    working_dir: /app
-    expose:
-     - "9999"
-    volumes:
-      - ./netlify:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=production
-    networks:
-      - mock_service_network
+  # # Netlify Static Site
+  # netlify:
+  #   restart: unless-stopped
+  #   image: netlify-image
+  #   build: ./netlify
+  #   container_name: docker-netlify
+  #   working_dir: /app
+  #   expose:
+  #    - "9999"
+  #   volumes:
+  #     - ./netlify:/app
+  #     - /app/node_modules
+  #   environment:
+  #     - NODE_ENV=production
+  #   networks:
+  #     - mock_service_network
 
-  # CodePush Admin
-  codepushadmin:
-    build: ./code-push-admin
-    container_name: docker-codepush-admin
-    working_dir: /app
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - CODE_PUSH_VERSION=1.0.1
-    networks:
-      - mock_service_network
+  # # CodePush Admin
+  # codepushadmin:
+  #   build: ./code-push-admin
+  #   container_name: docker-codepush-admin
+  #   working_dir: /app
+  #   environment:
+  #     - NODE_ENV=production
+  #     - PORT=3001
+  #     - CODE_PUSH_VERSION=1.0.1
+  #   networks:
+  #     - mock_service_network
 
-  # IT Tools
-  it:
-    restart: unless-stopped
-    image: corentinth/it-tools:latest
-    container_name: it-tools
-    networks:
-      - mock_service_network
+  # # IT Tools
+  # it:
+  #   restart: unless-stopped
+  #   image: corentinth/it-tools:latest
+  #   container_name: it-tools
+  #   networks:
+  #     - mock_service_network
 
-  # CodePush Server
-  codepush_server:
-    restart: unless-stopped
-    image: shmopen/code-push-server:latest
-    platform: linux/amd64
-    container_name: docker-codepush
-    volumes:
-      - codepush_data_storage:/data/storage
-      - codepush_data_tmp:/data/tmp
-    environment:
-      DOWNLOAD_URL: 'https://codepush.thangvnnc.io.vn/download'
-      TOKEN_SECRET: 'asdfgh123456789qwerty'
-      RDS_HOST: 'codepush_mysql'
-      RDS_USERNAME: 'codepush'
-      RDS_PASSWORD: '123456'
-      RDS_DATABASE: 'codepush'
-      STORAGE_DIR: '/data/storage'
-      DATA_DIR: '/data/tmp'
-      NODE_ENV: 'production'
-      REDIS_HOST: 'codepush_redis'
-    depends_on:
-      - codepush_mysql
-      - codepush_redis
-    networks:
-      - mock_service_network
+  # # CodePush Server
+  # codepush_server:
+  #   restart: unless-stopped
+  #   image: shmopen/code-push-server:latest
+  #   platform: linux/amd64
+  #   container_name: docker-codepush
+  #   volumes:
+  #     - codepush_data_storage:/data/storage
+  #     - codepush_data_tmp:/data/tmp
+  #   environment:
+  #     DOWNLOAD_URL: 'https://codepush.thangvnnc.io.vn/download'
+  #     TOKEN_SECRET: 'asdfgh123456789qwerty'
+  #     RDS_HOST: 'codepush_mysql'
+  #     RDS_USERNAME: 'codepush'
+  #     RDS_PASSWORD: '123456'
+  #     RDS_DATABASE: 'codepush'
+  #     STORAGE_DIR: '/data/storage'
+  #     DATA_DIR: '/data/tmp'
+  #     NODE_ENV: 'production'
+  #     REDIS_HOST: 'codepush_redis'
+  #   depends_on:
+  #     - codepush_mysql
+  #     - codepush_redis
+  #   networks:
+  #     - mock_service_network
 
-  # CodePush MySQL Database
-  codepush_mysql:
-    restart: unless-stopped
-    image: mysql:8.4.0-oraclelinux8
-    container_name: docker-mysql
-    volumes:
-      - codepush_data_mysql:/var/lib/mysql
-      - ./code-push-service/sql/codepush-all-docker.sql:/docker-entrypoint-initdb.d/codepush-all.sql
-    environment:
-      MYSQL_ROOT_PASSWORD: root123
-      MYSQL_DATABASE: codepush
-      MYSQL_USER: codepush
-      MYSQL_PASSWORD: 123456
-    networks:
-      - mock_service_network
+  # # CodePush MySQL Database
+  # codepush_mysql:
+  #   restart: unless-stopped
+  #   image: mysql:8.4.0-oraclelinux8
+  #   container_name: docker-mysql
+  #   volumes:
+  #     - codepush_data_mysql:/var/lib/mysql
+  #     - ./code-push-service/sql/codepush-all-docker.sql:/docker-entrypoint-initdb.d/codepush-all.sql
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: root123
+  #     MYSQL_DATABASE: codepush
+  #     MYSQL_USER: codepush
+  #     MYSQL_PASSWORD: 123456
+  #   networks:
+  #     - mock_service_network
 
-  # CodePush Redis
-  codepush_redis:
-    restart: unless-stopped
-    image: redis:latest
-    container_name: docker-redis
-    ports:
-      - '6379:6379'
-    volumes:
-      - codepush_data_redis:/data
-    networks:
-      - mock_service_network
+  # # CodePush Redis
+  # codepush_redis:
+  #   restart: unless-stopped
+  #   image: redis:latest
+  #   container_name: docker-redis
+  #   ports:
+  #     - '6379:6379'
+  #   volumes:
+  #     - codepush_data_redis:/data
+  #   networks:
+  #     - mock_service_network
 
-  # MinIO Object Storage
-  minio:
-    restart: unless-stopped
-    image: minio/minio:RELEASE.2024-01-18T22-51-28Z-cpuv1
-    container_name: docker-minio
-    environment:
-      MINIO_ROOT_USER: admin
-      MINIO_ROOT_PASSWORD: Test@123
-    command: server /data --console-address ":9001"
-    volumes:
-      - minio_data:/data
-    networks:
-      - mock_service_network
-    expose:
-      - "9000"
-      - "9001"
+  # # MinIO Object Storage
+  # minio:
+  #   restart: unless-stopped
+  #   image: minio/minio:RELEASE.2024-01-18T22-51-28Z-cpuv1
+  #   container_name: docker-minio
+  #   environment:
+  #     MINIO_ROOT_USER: admin
+  #     MINIO_ROOT_PASSWORD: Test@123
+  #   command: server /data --console-address ":9001"
+  #   volumes:
+  #     - minio_data:/data
+  #   networks:
+  #     - mock_service_network
+  #   expose:
+  #     - "9000"
+  #     - "9001"
 
-  # 2FAuth - Two-Factor Authentication
-  2fauth:
-    restart: unless-stopped
-    image: 2fauth/2fauth
-    container_name: docker-2fauth
-    volumes:
-      - 2fauth_data:/2fauth
-    expose:
-      - "8000"
-    environment:
-      - APP_NAME=2FAuth
-      - APP_ENV=local
-      - APP_TIMEZONE=UTC
-      - APP_DEBUG=false
-      - SITE_OWNER=mail@example.com
-      - APP_KEY=SomeRandomStringOf32CharsExactly
-      - APP_URL=https://2fa.thangvnnc.io.vn
-      - IS_DEMO_APP=false
-      - LOG_CHANNEL=daily
-      - LOG_LEVEL=notice
-      - DB_DATABASE="/srv/database/database.sqlite"
-      - CACHE_DRIVER=file
-      - SESSION_DRIVER=file
-      - MAIL_MAILER=log
-      - MAIL_HOST=smtp.mailtrap.io
-      - MAIL_PORT=2525
-      - MAIL_USERNAME=null
-      - MAIL_PASSWORD=null
-      - MAIL_ENCRYPTION=null
-      - MAIL_FROM_NAME=null
-      - MAIL_FROM_ADDRESS=null
-      - MAIL_VERIFY_SSL_PEER=true
-      - THROTTLE_API=60
-      - LOGIN_THROTTLE=5
-      - AUTHENTICATION_GUARD=web-guard
-      - AUTHENTICATION_LOG_RETENTION=365
-      - AUTH_PROXY_HEADER_FOR_USER=null
-      - AUTH_PROXY_HEADER_FOR_EMAIL=null
-      - PROXY_LOGOUT_URL=null
-      - WEBAUTHN_NAME=2FAuth
-      - WEBAUTHN_ID=null
-      - WEBAUTHN_USER_VERIFICATION=preferred
-      - TRUSTED_PROXIES=null
-      - PROXY_FOR_OUTGOING_REQUESTS=null
-      - CONTENT_SECURITY_POLICY=false
-      - BROADCAST_DRIVER=log
-      - QUEUE_DRIVER=sync
-      - SESSION_LIFETIME=120
-      - REDIS_HOST=codepush_redis
-      - REDIS_PASSWORD=null
-      - REDIS_PORT=6379
-      - PUSHER_APP_ID=
-      - PUSHER_APP_KEY=
-      - PUSHER_APP_SECRET=
-      - PUSHER_APP_CLUSTER=mt1
-      - VITE_PUSHER_APP_KEY="${PUSHER_APP_KEY}"
-      - VITE_PUSHER_APP_CLUSTER="${PUSHER_APP_CLUSTER}"
-      - MIX_ENV=local
-    networks:
-      - mock_service_network
+  # # 2FAuth - Two-Factor Authentication
+  # 2fauth:
+  #   restart: unless-stopped
+  #   image: 2fauth/2fauth
+  #   container_name: docker-2fauth
+  #   volumes:
+  #     - 2fauth_data:/2fauth
+  #   expose:
+  #     - "8000"
+  #   environment:
+  #     - APP_NAME=2FAuth
+  #     - APP_ENV=local
+  #     - APP_TIMEZONE=UTC
+  #     - APP_DEBUG=false
+  #     - SITE_OWNER=mail@example.com
+  #     - APP_KEY=SomeRandomStringOf32CharsExactly
+  #     - APP_URL=https://2fa.thangvnnc.io.vn
+  #     - IS_DEMO_APP=false
+  #     - LOG_CHANNEL=daily
+  #     - LOG_LEVEL=notice
+  #     - DB_DATABASE="/srv/database/database.sqlite"
+  #     - CACHE_DRIVER=file
+  #     - SESSION_DRIVER=file
+  #     - MAIL_MAILER=log
+  #     - MAIL_HOST=smtp.mailtrap.io
+  #     - MAIL_PORT=2525
+  #     - MAIL_USERNAME=null
+  #     - MAIL_PASSWORD=null
+  #     - MAIL_ENCRYPTION=null
+  #     - MAIL_FROM_NAME=null
+  #     - MAIL_FROM_ADDRESS=null
+  #     - MAIL_VERIFY_SSL_PEER=true
+  #     - THROTTLE_API=60
+  #     - LOGIN_THROTTLE=5
+  #     - AUTHENTICATION_GUARD=web-guard
+  #     - AUTHENTICATION_LOG_RETENTION=365
+  #     - AUTH_PROXY_HEADER_FOR_USER=null
+  #     - AUTH_PROXY_HEADER_FOR_EMAIL=null
+  #     - PROXY_LOGOUT_URL=null
+  #     - WEBAUTHN_NAME=2FAuth
+  #     - WEBAUTHN_ID=null
+  #     - WEBAUTHN_USER_VERIFICATION=preferred
+  #     - TRUSTED_PROXIES=null
+  #     - PROXY_FOR_OUTGOING_REQUESTS=null
+  #     - CONTENT_SECURITY_POLICY=false
+  #     - BROADCAST_DRIVER=log
+  #     - QUEUE_DRIVER=sync
+  #     - SESSION_LIFETIME=120
+  #     - REDIS_HOST=codepush_redis
+  #     - REDIS_PASSWORD=null
+  #     - REDIS_PORT=6379
+  #     - PUSHER_APP_ID=
+  #     - PUSHER_APP_KEY=
+  #     - PUSHER_APP_SECRET=
+  #     - PUSHER_APP_CLUSTER=mt1
+  #     - VITE_PUSHER_APP_KEY="${PUSHER_APP_KEY}"
+  #     - VITE_PUSHER_APP_CLUSTER="${PUSHER_APP_CLUSTER}"
+  #     - MIX_ENV=local
+  #   networks:
+  #     - mock_service_network
 
-  # Service Logs MySQL Database
-  service_logs_mysql:
-    image: mysql:8.4.0-oraclelinux8
-    platform: linux/amd64
-    container_name: service_logs_mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${SERVICE_LOGS_DB_PASSWORD:-Test@123}
-      MYSQL_DATABASE: ${SERVICE_LOGS_DB_NAME:-service_logs}
-    ports:
-      - "10001:3306"
-    volumes:
-      - service_logs_mysql_data:/var/lib/mysql
-      - ./service_logs/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${SERVICE_LOGS_DB_PASSWORD:-Test@123}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - mock_service_network
+  # # Service Logs MySQL Database
+  # service_logs_mysql:
+  #   image: mysql:8.4.0-oraclelinux8
+  #   platform: linux/amd64
+  #   container_name: service_logs_mysql
+  #   restart: unless-stopped
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: ${SERVICE_LOGS_DB_PASSWORD:-Test@123}
+  #     MYSQL_DATABASE: ${SERVICE_LOGS_DB_NAME:-service_logs}
+  #   ports:
+  #     - "10001:3306"
+  #   volumes:
+  #     - service_logs_mysql_data:/var/lib/mysql
+  #     - ./service_logs/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${SERVICE_LOGS_DB_PASSWORD:-Test@123}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - mock_service_network
 
-  # Service Logs (Node.js Service)
-  service_logs:
-    build:
-      context: ./service_logs
-      dockerfile: Dockerfile
-    container_name: service_logs_app
-    restart: unless-stopped
-    ports:
-      - "${PUBLIC_SERVICE_LOGS_PORT:-10000}:10000"
-    environment:
-      NODE_ENV: ${NODE_ENV:-production}
-      DB_HOST: ${SERVICE_LOGS_DB_HOST:-service_logs_mysql}
-      DB_PORT: ${SERVICE_LOGS_DB_PORT:-3306}
-      DB_USER: ${SERVICE_LOGS_DB_USER:-root}
-      DB_PASSWORD: ${SERVICE_LOGS_DB_PASSWORD:-Test@123}
-      DB_NAME: ${SERVICE_LOGS_DB_NAME:-service_logs}
-      PORT: 10000
-    depends_on:
-      service_logs_mysql:
-        condition: service_healthy
-    volumes:
-      - ./service_logs/src:/app/src
-      - ./service_logs/package.json:/app/package.json
-      - /app/node_modules
-    networks:
-      - mock_service_network
-    command: npm start
+  # # Service Logs (Node.js Service)
+  # service_logs:
+  #   build:
+  #     context: ./service_logs
+  #     dockerfile: Dockerfile
+  #   container_name: service_logs_app
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${PUBLIC_SERVICE_LOGS_PORT:-10000}:10000"
+  #   environment:
+  #     NODE_ENV: ${NODE_ENV:-production}
+  #     DB_HOST: ${SERVICE_LOGS_DB_HOST:-service_logs_mysql}
+  #     DB_PORT: ${SERVICE_LOGS_DB_PORT:-3306}
+  #     DB_USER: ${SERVICE_LOGS_DB_USER:-root}
+  #     DB_PASSWORD: ${SERVICE_LOGS_DB_PASSWORD:-Test@123}
+  #     DB_NAME: ${SERVICE_LOGS_DB_NAME:-service_logs}
+  #     PORT: 10000
+  #   depends_on:
+  #     service_logs_mysql:
+  #       condition: service_healthy
+  #   volumes:
+  #     - ./service_logs/src:/app/src
+  #     - ./service_logs/package.json:/app/package.json
+  #     - /app/node_modules
+  #   networks:
+  #     - mock_service_network
+  #   command: npm start
 
   # # GitLab CE (Self-hosted GitLab)
   # gitlab_ce:
@@ -408,24 +399,20 @@ services:
 volumes:
   mock_mysql_data:
     driver: local
-  certbot_gateway_data:
-    driver: local
-  certbot_gateway_www:
-    driver: local
-  codepush_data_storage:
-    driver: local
-  codepush_data_tmp:
-    driver: local
-  codepush_data_mysql:
-    driver: local
-  codepush_data_redis:
-    driver: local
-  minio_data:
-    driver: local
-  2fauth_data:
-    driver: local
-  service_logs_mysql_data:
-    driver: local
+  # codepush_data_storage:
+  #   driver: local
+  # codepush_data_tmp:
+  #   driver: local
+  # codepush_data_mysql:
+  #   driver: local
+  # codepush_data_redis:
+  #   driver: local
+  # minio_data:
+  #   driver: local
+  # 2fauth_data:
+  #   driver: local
+  # service_logs_mysql_data:
+  #   driver: local
   # gitlab_config:
   #   driver: local
   # gitlab_logs:
