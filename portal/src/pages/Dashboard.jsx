@@ -61,7 +61,7 @@ function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Mapping Domains */}
         <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow">
-          <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-800 dark:text-white">Mapping Domains</h3>
+          <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-800 dark:text-white">Mapping Domains: (https://fw.thangvnnc.io.vn/*)</h3>
           {loading ? (
             <div className="text-center py-4 text-gray-500 dark:text-gray-400">Loading...</div>
           ) : Object.keys(groupedDomains).length === 0 ? (
@@ -71,7 +71,7 @@ function Dashboard() {
               {Object.entries(groupedDomains).map(([projectName, domains]) => (
                 <div key={projectName} className="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-b-0 last:pb-0">
                   <h4 className="text-sm md:text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    {projectName}
+                    {projectName}: https://fw.thangvnnc.io.vn/{domain.path}
                   </h4>
                   <div className="space-y-2">
                     {domains.map((domain) => (
