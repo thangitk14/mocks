@@ -71,7 +71,7 @@ function Dashboard() {
               {Object.entries(groupedDomains).map(([projectName, domains]) => (
                 <div key={projectName} className="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-b-0 last:pb-0">
                   <h4 className="text-sm md:text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    {projectName}: https://fw.thangvnnc.io.vn/{domain.path}
+                    {projectName}
                   </h4>
                   <div className="space-y-2">
                     {domains.map((domain) => (
@@ -83,7 +83,7 @@ function Dashboard() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="text-xs md:text-sm font-medium text-gray-900 dark:text-white truncate">
-                              {domain.path}
+                              {domain.path}: https://fw.thangvnnc.io.vn/{domain.path}
                             </div>
                             <div className="text-xs text-gray-600 dark:text-gray-400 truncate mt-1">
                               → {domain.forward_domain}
