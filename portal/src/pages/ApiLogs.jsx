@@ -747,6 +747,7 @@ function ApiLogs() {
           </select>
         </div>
         <div className="flex items-center gap-4">
+          
           <div className="text-sm text-gray-600 dark:text-gray-400">
             Showing {logs.length > 0 ? (page - 1) * limit + 1 : 0} to {Math.min(page * limit, total)} of {total} logs
           </div>
