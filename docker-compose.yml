@@ -42,7 +42,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       # Database connection - use Docker service name
-      DB_HOST: 103.161.17.190
+      DB_HOST: ${DB_HOST:-0.0.0.0}
       DB_PORT: ${DB_PORT:-3306}
       DB_USER: ${DB_USER:-root}
       DB_PASSWORD: ${DB_PASSWORD:-Test@123}
