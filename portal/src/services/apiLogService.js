@@ -17,5 +17,10 @@ export const apiLogService = {
     const response = await api.get(`/api/logs/domain/${domainId}${queryParams ? `?${queryParams}` : ''}`)
     return response.data
   },
+
+  deleteAllByDomainId: async (domainId) => {
+    const response = await api.delete(`/api/logs/domain/${domainId}`)
+    return response.data
+  },
 }
 

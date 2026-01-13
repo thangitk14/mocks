@@ -91,6 +91,21 @@ class ApiLog {
     );
     return rows[0].count;
   }
+
+  static async deleteAllByDomainId(domainId) {
+    // Convert to integer to avoid MySQL prepared statement issues
+    const domainIdInt = parseInt(domainId);
+    
+    if (isNaN(domainIdInt)) {
+      throw new Error('Invalid domainId');
+    }
+    
+    const [result] = await db.execute(
+      'DELETE FROM api_logs WHERE domain_id = ?',
+      [domainIdInt]
+    );
+    return result.affectedRows;
+  }
 }
 
 module.exports = ApiLog;

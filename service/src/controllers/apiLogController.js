@@ -140,10 +140,28 @@ const createApiLog = async (req, res, next) => {
   }
 };
 
+const deleteAllLogsByDomain = async (req, res, next) => {
+  try {
+    const { domainId } = req.params;
+    
+    const deletedCount = await ApiLog.deleteAllByDomainId(domainId);
+
+    res.json({
+      success: true,
+      data: {
+        deletedCount
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getApiLogs,
   getApiLogById,
   getApiLogsByDomain,
-  createApiLog
+  createApiLog,
+  deleteAllLogsByDomain
 };
 

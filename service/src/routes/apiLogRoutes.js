@@ -4,7 +4,8 @@ const {
   getApiLogs,
   getApiLogById,
   getApiLogsByDomain,
-  createApiLog
+  createApiLog,
+  deleteAllLogsByDomain
 } = require('../controllers/apiLogController');
 const authenticate = require('../middleware/auth');
 
@@ -22,6 +23,9 @@ router.get('/:id', getApiLogById);
 
 // Get API logs by domain ID
 router.get('/domain/:domainId', getApiLogsByDomain);
+
+// Delete all API logs by domain ID
+router.delete('/domain/:domainId', deleteAllLogsByDomain);
 
 module.exports = router;
 

@@ -32,6 +32,10 @@ function ApiLogs() {
     state: 'Active'
   })
   const [mockFormLoading, setMockFormLoading] = useState(false)
+  const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false)
+  const [showErrorDialog, setShowErrorDialog] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
   const { showError } = useError()
   const { permissions } = useAuth()
 
@@ -210,6 +214,24 @@ function ApiLogs() {
   }
 
   const totalPages = Math.ceil(total / limit)
+
+  const handleDeleteAllLogs = async () => {
+    try {
+      setIsDeleting(true)
+      await apiLogService.deleteAllByDomainId(domainId)
+      setShowDeleteConfirmDialog(false)
+      // Refresh logs after deletion
+      setPage(1)
+      await fetchLogs()
+    } catch (error) {
+      setShowDeleteConfirmDialog(false)
+      const errorMsg = error.response?.data?.error?.message || error.response?.data?.message || 'Không thể xóa logs'
+      setErrorMessage(errorMsg)
+      setShowErrorDialog(true)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const handleCopyCurl = async (e) => {
     e?.stopPropagation()
@@ -724,8 +746,16 @@ function ApiLogs() {
             <option value={100}>100</option>
           </select>
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          Showing {logs.length > 0 ? (page - 1) * limit + 1 : 0} to {Math.min(page * limit, total)} of {total} logs
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Showing {logs.length > 0 ? (page - 1) * limit + 1 : 0} to {Math.min(page * limit, total)} of {total} logs
+          </div>
+          <button
+            onClick={() => setShowDeleteConfirmDialog(true)}
+            className="px-4 py-2 border border-red-500 bg-white dark:bg-gray-800 text-red-500 dark:text-red-400 rounded hover:bg-red-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+          >
+            Xóa log
+          </button>
         </div>
       </div>
 
@@ -1268,6 +1298,74 @@ function ApiLogs() {
                 disabled={mockFormLoading}
               >
                 {mockFormLoading ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirmDialog && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => !isDeleting && setShowDeleteConfirmDialog(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b dark:border-gray-700">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white">Xác nhận xóa</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 dark:text-gray-300">
+                Bạn có chắc chắn muốn xóa tất cả logs không? Hành động này không thể hoàn tác.
+              </p>
+            </div>
+            <div className="p-6 border-t dark:border-gray-700 flex justify-end gap-2">
+              <button
+                onClick={() => setShowDeleteConfirmDialog(false)}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded hover:bg-gray-600 dark:hover:bg-gray-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleDeleteAllLogs}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded hover:bg-red-600 dark:hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? 'Đang xóa...' : 'Xác nhận'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Dialog */}
+      {showErrorDialog && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowErrorDialog(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b dark:border-gray-700">
+              <h3 className="text-xl font-bold text-red-600 dark:text-red-400">Lỗi</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 dark:text-gray-300">
+                {errorMessage}
+              </p>
+            </div>
+            <div className="p-6 border-t dark:border-gray-700 flex justify-end">
+              <button
+                onClick={() => setShowErrorDialog(false)}
+                className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded hover:bg-gray-600 dark:hover:bg-gray-700 transition"
+              >
+                Đóng
               </button>
             </div>
           </div>
