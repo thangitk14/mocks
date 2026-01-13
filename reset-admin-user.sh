@@ -2,7 +2,7 @@
 
 # Script to reset admin user to default credentials
 # Username: admin
-# Password: Test@123
+# Password: Ttct@835!!
 
 set -e
 
@@ -19,7 +19,7 @@ NC='\033[0m' # No Color
 # Get database credentials from docker compose or use defaults
 DB_NAME="${DB_NAME:-service_dev}"
 DB_USER="${DB_USER:-root}"
-DB_PASSWORD="${DB_PASSWORD:-Test@123}"
+DB_PASSWORD="${DB_PASSWORD:-Ttct@835!!}"
 DB_HOST="${DB_HOST:-localhost}"
 DB_PORT="${DB_PORT:-3306}"
 
@@ -40,7 +40,7 @@ fi
 echo -e "${YELLOW}Resetting admin user...${NC}"
 
 # Reset admin user password and state
-# Password hash for 'Test@123': $2a$10$tAjbvG5/Z9Ts149obxmokeDTD3MBQ79jGHBDJH/nHCiiuDJvRmWFu
+# Password hash for 'Ttct@835!!': $2a$10$tAjbvG5/Z9Ts149obxmokeDTD3MBQ79jGHBDJH/nHCiiuDJvRmWFu
 ADMIN_PASSWORD_HASH='$2a$10$tAjbvG5/Z9Ts149obxmokeDTD3MBQ79jGHBDJH/nHCiiuDJvRmWFu'
 
 docker compose exec -T mock_mysql mysql -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" <<EOF
@@ -77,7 +77,7 @@ if [ $? -eq 0 ]; then
     echo ""
     echo -e "${GREEN}Login credentials:${NC}"
     echo "  Username: admin"
-    echo "  Password: Test@123"
+    echo "  Password: Ttct@835!!"
     echo ""
     echo -e "${YELLOW}You can now login with these credentials.${NC}"
 else

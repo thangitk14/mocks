@@ -49,7 +49,7 @@ Có thể thêm service migration vào `docker-compose.yml`:
       DB_HOST: ${DB_HOST:-mock_mysql}
       DB_PORT: ${DB_PORT:-3306}
       DB_USER: ${DB_USER:-root}
-      DB_PASSWORD: ${DB_PASSWORD:-Test@123}
+      DB_PASSWORD: ${DB_PASSWORD:-Ttct@835!!}
       DB_NAME: ${DB_NAME:-service_dev}
     depends_on:
       mock_mysql:
@@ -86,10 +86,10 @@ docker compose --profile migrate up mock_service_migrate
 
 ```bash
 # Kiểm tra column domain_id trong mock_groups
-docker exec -it mock_service_mysql mysql -uroot -p${DB_PASSWORD:-Test@123} ${DB_NAME:-service_dev} -e "DESCRIBE mock_groups;"
+docker exec -it mock_service_mysql mysql -uroot -p${DB_PASSWORD:-Ttct@835!!} ${DB_NAME:-service_dev} -e "DESCRIBE mock_groups;"
 
 # Kiểm tra ENUM values của mock_responses.state
-docker exec -it mock_service_mysql mysql -uroot -p${DB_PASSWORD:-Test@123} ${DB_NAME:-service_dev} -e "SHOW COLUMNS FROM mock_responses LIKE 'state';"
+docker exec -it mock_service_mysql mysql -uroot -p${DB_PASSWORD:-Ttct@835!!} ${DB_NAME:-service_dev} -e "SHOW COLUMNS FROM mock_responses LIKE 'state';"
 ```
 
 ## Troubleshooting

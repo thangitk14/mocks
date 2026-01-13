@@ -26,7 +26,7 @@ fi
 # Get database credentials from docker compose or use defaults
 DB_NAME="${DB_NAME:-service_dev}"
 DB_USER="${DB_USER:-root}"
-DB_PASSWORD="${DB_PASSWORD:-Test@123}"
+DB_PASSWORD="${DB_PASSWORD:-Ttct@835!!}"
 DB_HOST="${DB_HOST:-localhost}"
 DB_PORT="${DB_PORT:-3306}"
 
@@ -94,7 +94,7 @@ if [ "$tables" -ge "5" ]; then
     if [ "$admin_exists" -eq "1" ]; then
         echo -e "${GREEN}✓ Admin user created${NC}"
         echo -e "${GREEN}  Username: admin${NC}"
-        echo -e "${GREEN}  Password: Test@123${NC}"
+        echo -e "${GREEN}  Password: Ttct@835!!${NC}"
     else
         echo -e "${RED}✗ Admin user not found${NC}"
     fi
@@ -125,6 +125,6 @@ echo "Next steps:"
 echo "  1. Start all services: docker compose up -d"
 echo "  2. Login to portal: http://fw.thangvnnc.io.vn:8910"
 echo "     Username: admin"
-echo "     Password: Test@123"
+echo "     Password: Ttct@835!!"
 echo ""
 

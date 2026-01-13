@@ -7,7 +7,7 @@ services:
     container_name: mock_service_mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: Test@123
+      MYSQL_ROOT_PASSWORD: Ttct@835!!
       MYSQL_DATABASE: service_dev
     ports:
       - "3306:3306"
@@ -15,7 +15,7 @@ services:
       - mock_mysql_data:/var/lib/mysql
       - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pTest@123"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pTtct@835!!"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -36,7 +36,7 @@ services:
       DB_HOST: mock_mysql
       DB_PORT: 3306
       DB_USER: root
-      DB_PASSWORD: Test@123
+      DB_PASSWORD: Ttct@835!!
       DB_NAME: service_dev
       JWT_SECRET: your_jwt_secret_key_for_development
       JWT_EXPIRES_IN: 24h

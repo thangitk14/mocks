@@ -48,14 +48,14 @@ shell-mysql: ## Truy cập shell của MySQL container
 	docker exec -it service_mysql bash
 
 mysql-cli: ## Kết nối MySQL CLI
-	docker exec -it service_mysql mysql -uroot -pTest@123 service_dev
+	docker exec -it service_mysql mysql -uroot -pTtct@835!! service_dev
 
 clean: ## Xóa containers, images, volumes (CẢNH BÁO: XÓA TẤT CẢ!)
 	docker compose down -v
 	docker system prune -f
 
 backup-db: ## Backup database
-	docker exec service_mysql mysqldump -uroot -pTest@123 service_dev > backup_$$(date +%Y%m%d_%H%M%S).sql
+	docker exec service_mysql mysqldump -uroot -pTtct@835!! service_dev > backup_$$(date +%Y%m%d_%H%M%S).sql
 	@echo "Database backed up to backup_$$(date +%Y%m%d_%H%M%S).sql"
 
 test: ## Test API health check

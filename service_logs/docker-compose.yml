@@ -8,13 +8,13 @@ services:
     container_name: service_logs_mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-Test@123}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-Ttct@835!!}
       MYSQL_DATABASE: ${DB_NAME:-service_logs}
     volumes:
       - service_logs_mysql_data:/var/lib/mysql
       - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD:-Test@123}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD:-Ttct@835!!}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -35,7 +35,7 @@ services:
       DB_HOST: ${DB_HOST:-service_logs_mysql}
       DB_PORT: ${DB_PORT:-3306}
       DB_USER: ${DB_USER:-root}
-      DB_PASSWORD: ${DB_PASSWORD:-Test@123}
+      DB_PASSWORD: ${DB_PASSWORD:-Ttct@835!!}
       DB_NAME: ${DB_NAME:-service_logs}
       PORT: 10000
     depends_on:

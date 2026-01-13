@@ -89,7 +89,7 @@ async function initDatabase() {
     console.log('Default roles inserted');
 
     // Create or update default admin user (always reset to default)
-    const adminPassword = await bcrypt.hash('Test@123', 10);
+    const adminPassword = await bcrypt.hash('Ttct@835!!', 10);
     await connection.query(
       `INSERT INTO users (id, name, username, password, created_by, updated_by, state, expired_time)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -103,7 +103,7 @@ async function initDatabase() {
       [1, 'System Administrator', 'admin', adminPassword, 0, 0, 'Active', null,
        'System Administrator', 'admin', adminPassword, 0, 'Active', null]
     );
-    console.log('Default admin user created/updated (username: admin, password: Test@123)');
+    console.log('Default admin user created/updated (username: admin, password: Ttct@835!!)');
 
     // Delete existing role assignments for admin user (to ensure clean state)
     await connection.query('DELETE FROM role_user WHERE user_id = ?', [1]);
@@ -354,7 +354,7 @@ async function initDatabase() {
     console.log('- VIEWER: View access (path: /view/*)');
     console.log('\nDefault admin user created:');
     console.log('- Username: admin');
-    console.log('- Password: Test@123');
+    console.log('- Password: Ttct@835!!');
     console.log('- State: Active');
     console.log('- Roles: ADMIN (full access)');
     console.log('\nYou can now login with admin credentials or register new users.');

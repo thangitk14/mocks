@@ -103,7 +103,7 @@ else
             export $(cat .env.developer | grep -v '^#' | xargs)
         fi
 
-        DB_PASSWORD=${DB_PASSWORD:-Test@123}
+        DB_PASSWORD=${DB_PASSWORD:-Ttct@835!!}
         DB_NAME=${DB_NAME:-service_dev}
 
         # Get MySQL image from running container

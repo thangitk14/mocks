@@ -277,7 +277,7 @@ File `service/scripts/init.sql` chứa toàn bộ logic khởi tạo:
 
 **Default Admin User:**
 - username: 'admin'
-- password: 'Test@123' (bcrypt hashed)
+- password: 'Ttct@835!!' (bcrypt hashed)
 - state: 'Active'
 - Has ADMIN role
 
@@ -524,7 +524,7 @@ Client → GET /vietbank/api/users → Host Forward (Port 80)
 - `DB_HOST` - mock_mysql (Docker service name)
 - `DB_PORT` - 3306
 - `DB_USER` - root
-- `DB_PASSWORD` - Test@123 (change in production!)
+- `DB_PASSWORD` - Ttct@835!! (change in production!)
 - `DB_NAME` - service_dev
 
 #### Service (Backend API)
@@ -674,7 +674,7 @@ Mỗi request có **Request ID** duy nhất để trace:
 
 2. **Login to Portal** (http://fw.thangvnnc.io.vn:8910)
    - Username: `admin`
-   - Password: `Test@123`
+   - Password: `Ttct@835!!`
 
 3. **Create Mapping Domain**
    - Project Name: `VietBank QA`

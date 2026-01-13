@@ -4,7 +4,7 @@
 # Usage: chmod +x test-user-states.sh && ./test-user-states.sh
 
 API_URL="http://localhost:3000"
-MYSQL_CMD="docker exec -i service_mysql mysql -uroot -pTest@123 service_dev"
+MYSQL_CMD="docker exec -i service_mysql mysql -uroot -pTtct@835!! service_dev"
 
 echo "======================================"
 echo "User State Management Test Script"
@@ -18,7 +18,7 @@ curl -X POST ${API_URL}/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "username": "admin",
-    "password": "Test@123"
+    "password": "Ttct@835!!"
   }' | jq .
 
 echo -e "\n\n"

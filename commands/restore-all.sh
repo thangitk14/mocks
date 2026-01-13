@@ -143,7 +143,7 @@ sleep 10
 MYSQL_READY=false
 for i in {1..30}; do
     # Use mysqladmin for MySQL Oracle Linux
-    if docker exec mock_service_mysql sh -c "mysqladmin ping -h localhost -uroot -p'${DB_PASSWORD:-Test@123}' --silent" 2>/dev/null; then
+    if docker exec mock_service_mysql sh -c "mysqladmin ping -h localhost -uroot -p'${DB_PASSWORD:-Ttct@835!!}' --silent" 2>/dev/null; then
         MYSQL_READY=true
         break
     fi
@@ -167,7 +167,7 @@ else
             export $(cat .env.developer | grep -v '^#' | xargs)
         fi
 
-        DB_PASSWORD=${DB_PASSWORD:-Test@123}
+        DB_PASSWORD=${DB_PASSWORD:-Ttct@835!!}
 
         # Get MySQL image from running container
         MYSQL_IMAGE=$(docker inspect mock_service_mysql --format='{{.Config.Image}}' 2>/dev/null || echo "mysql:8.0")
