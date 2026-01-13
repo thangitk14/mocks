@@ -14,8 +14,10 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-Ttct@835!!}
       MYSQL_DATABASE: ${DB_NAME:-service_dev}
-    ports:
-      - "3306:3306"
+    # Port 3306 only accessible within Docker network (not exposed to host)
+    # Other containers can connect via service name 'mock_mysql' on port 3306
+    expose:
+      - "3306"
     volumes:
       - mock_mysql_data:/var/lib/mysql
       - ./service/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
