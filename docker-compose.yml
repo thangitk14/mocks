@@ -28,7 +28,7 @@ services:
       - mock_service_network
 
   # Node.js Service (Backend API)
-  c:
+  mock_service:
     build:
       context: ./service
       dockerfile: Dockerfile
