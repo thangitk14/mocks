@@ -133,3 +133,4 @@ echo "docker exec -it mock_service_mysql mysql -u$DB_USER -p$DB_PASSWORD -h $DB_
 echo ""
 
 
+

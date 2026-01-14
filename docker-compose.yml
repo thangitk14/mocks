@@ -157,6 +157,8 @@ services:
     working_dir: /app
     expose:
      - "9999"
+    ports:
+      - "${PUBLIC_NETLIFY_PORT:-9999}:9999"
     volumes:
       - ./netlify:/app
       - /app/node_modules
