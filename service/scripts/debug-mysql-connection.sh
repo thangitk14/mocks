@@ -132,3 +132,4 @@ echo "To test connection manually:"
 echo "docker exec -it mock_service_mysql mysql -u$DB_USER -p$DB_PASSWORD -h $DB_HOST $DB_NAME"
 echo ""
 
+
