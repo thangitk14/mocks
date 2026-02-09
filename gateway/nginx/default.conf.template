@@ -669,12 +669,19 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
 
+    # Allow large file uploads up to 50GB
+    client_max_body_size 50G;
+    proxy_request_buffering off;
+
     location / {
         proxy_pass http://minio-api;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_connect_timeout 300s;
     }
 
     location ~ /.well-known/acme-challenge/ {
@@ -704,6 +711,10 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
 
+    # Allow large file uploads up to 50GB
+    client_max_body_size 50G;
+    proxy_request_buffering off;
+
     location / {
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -715,6 +726,9 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
 
         proxy_pass http://minio-console;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_connect_timeout 300s;
     }
 
     location ~ /.well-known/acme-challenge/ {
